@@ -25,6 +25,8 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
   const price = money(fd, "price");
   if (name.length < 2) return { error: "Dê um nome à peça." };
   if (price === null || price < 0) return { error: "Informe um preço válido." };
+  const cost = money(fd, "cost");
+  if (cost !== null && cost < 0) return { error: "Informe um custo válido." };
   let variants: { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number }[] = [];
   let images: string[] = [];
   try { variants = JSON.parse(str(fd, "variants") || "[]"); images = JSON.parse(str(fd, "images") || "[]"); } catch { return { error: "Variações inválidas." }; }
@@ -32,7 +34,7 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
 
   const row = {
     name, slug: slugify(str(fd, "slug") || name), description: str(fd, "description"), price,
-    compare_at_price: money(fd, "compare_at_price"), cost: money(fd, "cost"), sku: str(fd, "sku") || null,
+    compare_at_price: money(fd, "compare_at_price"), sku: str(fd, "sku") || null,
     category_id: str(fd, "category_id") || null, collection_id: str(fd, "collection_id") || null,
     art: str(fd, "art") || "blazer", tone: str(fd, "tone") || "#cfcac0", material: str(fd, "material"), care: str(fd, "care"),
     status: str(fd, "status") || "active", is_featured: fd.get("is_featured") === "on", images,
@@ -43,6 +45,12 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
     : await supabase.from("products").insert(row).select("id").single();
   if (saved.error) return fail(saved.error.message);
   const productId = saved.data.id;
+
+  // O custo fica numa tabela só da equipe, fora da leitura pública de products.
+  const costSaved = cost === null
+    ? await supabase.from("product_costs").delete().eq("product_id", productId)
+    : await supabase.from("product_costs").upsert({ product_id: productId, cost, updated_at: new Date().toISOString() });
+  if (costSaved.error) return fail(costSaved.error.message);
 
   // Variações: o estoque de variações existentes só muda pela tela de Estoque (com histórico).
   const { data: current } = await supabase.from("product_variants").select("id").eq("product_id", productId);

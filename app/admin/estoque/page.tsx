@@ -10,14 +10,14 @@ import { brl, dateTime, num, REASON } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Estoque" };
 
-type Row = { id: string; size: string; color: string; color_hex: string; sku: string | null; stock: number; products: { id: string; name: string; art: string; tone: string; images: string[]; price: number; cost: number | null } };
+type Row = { id: string; size: string; color: string; color_hex: string; sku: string | null; stock: number; products: { id: string; name: string; art: string; tone: string; images: string[]; price: number; product_costs: { cost: number } | null } };
 
 export default async function Estoque({ searchParams }: { searchParams: Promise<{ filtro?: string; q?: string }> }) {
   const f = await searchParams;
   const supabase = await createClient();
   const settings = await getSettings();
   const [{ data }, { data: moves }] = await Promise.all([
-    supabase.from("product_variants").select("id, size, color, color_hex, sku, stock, products!inner(id, name, art, tone, images, price, cost)").order("stock"),
+    supabase.from("product_variants").select("id, size, color, color_hex, sku, stock, products!inner(id, name, art, tone, images, price, product_costs(cost))").order("stock"),
     supabase.from("inventory_movements").select("id, delta, reason, note, created_at, product_variants(size, color, products(name))").order("created_at", { ascending: false }).limit(14),
   ]);
   const all = (data ?? []) as unknown as Row[];
@@ -36,7 +36,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
       <section className="rule mb-4 grid grid-cols-2 md:grid-cols-4 md:divide-x md:divide-ink">
         <Kpi label="Unidades em estoque" value={num(units)} />
         <Kpi label="Valor de venda" value={brl(all.reduce((a, v) => a + v.stock * Number(v.products.price), 0)).replace(/,\d\d$/, "")} />
-        <Kpi label="Valor de custo" value={brl(all.reduce((a, v) => a + v.stock * Number(v.products.cost ?? 0), 0)).replace(/,\d\d$/, "")} />
+        <Kpi label="Valor de custo" value={brl(all.reduce((a, v) => a + v.stock * Number(v.products.product_costs?.cost ?? 0), 0)).replace(/,\d\d$/, "")} />
         <Kpi label="Reposição prioritária" value={num(low.length + out.length)} hint={`${out.length} zeradas · ${low.length} abaixo de ${settings.low_stock_threshold + 1} un.`} />
       </section>
       <div className="grid gap-5 xl:grid-cols-[1.7fr_1fr]">

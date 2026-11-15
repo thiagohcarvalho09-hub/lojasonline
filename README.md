@@ -17,7 +17,7 @@ Sem as variáveis do Supabase, a plataforma inteira (loja e painel) abre com um 
 ## Colocar no ar
 
 1. Crie um projeto no Supabase e rode, em ordem, os arquivos de `supabase/migrations/` (o `0002_seed.sql` é só o catálogo de demonstração).
-2. Na Vercel, importe este repositório e defina `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` (veja `.env.example`).
+2. Na Vercel, importe este repositório e defina `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (veja `.env.example`).
 3. Abra `/login` e crie a primeira conta: ela vira proprietária da loja. Faça isso logo após publicar.
 
 Local: `cp .env.example .env.local`, preencha, `npm install && npm run dev`.

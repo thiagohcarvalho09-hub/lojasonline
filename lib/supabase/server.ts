@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createDemoClient } from "@/lib/demo";
 
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-export const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+export const SUPABASE_KEY = (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) ?? "";
 export const isConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
 /** Cliente do Supabase da requisição — ou, sem as variáveis de ambiente, o catálogo de demonstração. */

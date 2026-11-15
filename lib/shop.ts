@@ -5,6 +5,9 @@ import type { Collection, Product, Settings } from "@/lib/types";
 export const PRODUCT_SELECT =
   "*, categories(name, slug), collections(name, slug, season), product_variants(id, product_id, size, color, color_hex, sku, stock, price_override)";
 
+/** Só para o painel: inclui o custo, que o banco entrega apenas à equipe. */
+export const ADMIN_PRODUCT_SELECT = `${PRODUCT_SELECT}, product_costs(cost)`;
+
 const DEFAULTS: Settings = {
   name: "ATELIER", tagline: "Moda & Acessórios", announcement: "", hero_title: "Nova coleção",
   hero_subtitle: "Peças que definem a temporada.", season: "SS27", shipping_flat: 29.9, free_shipping_over: 900,

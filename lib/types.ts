@@ -4,13 +4,15 @@ export type Variant = {
 };
 export type Product = {
   id: string; name: string; slug: string; description: string; price: number;
-  compare_at_price: number | null; cost: number | null; sku: string | null; images: string[];
+  compare_at_price: number | null; sku: string | null; images: string[];
   art: string; tone: string; material: string; care: string; tags: string[]; status: string;
   is_featured: boolean; wish_count: number; created_at: string;
   category_id: string | null; collection_id: string | null;
   categories?: { name: string; slug: string } | null;
   collections?: { name: string; slug: string; season: string } | null;
   product_variants?: Variant[];
+  /** Custo da peça: tabela restrita à equipe, só vem nas consultas do painel. */
+  product_costs?: { cost: number } | null;
 };
 export type Collection = {
   id: string; name: string; slug: string; description: string; season: string;

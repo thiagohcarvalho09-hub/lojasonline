@@ -5,7 +5,7 @@ import { PageHead, Tabs } from "@/components/admin/bits";
 import { ProductImage } from "@/components/art";
 import { Empty } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
-import { PRODUCT_SELECT } from "@/lib/shop";
+import { ADMIN_PRODUCT_SELECT } from "@/lib/shop";
 import { brl } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
@@ -15,7 +15,7 @@ const LABEL: Record<string, string> = { active: "Ativo", draft: "Rascunho", arch
 export default async function Produtos({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   const f = await searchParams;
   const supabase = await createClient();
-  let query = supabase.from("products").select(PRODUCT_SELECT).order("created_at", { ascending: false });
+  let query = supabase.from("products").select(ADMIN_PRODUCT_SELECT).order("created_at", { ascending: false });
   if (f.status) query = query.eq("status", f.status);
   if (f.q) query = query.ilike("name", `%${f.q.replace(/[%_,()]/g, " ").trim()}%`);
   const { data } = await query;
@@ -35,7 +35,8 @@ export default async function Produtos({ searchParams }: { searchParams: Promise
             <tbody>
               {products.map((p) => {
                 const stock = (p.product_variants ?? []).reduce((a, v) => a + v.stock, 0);
-                const margin = p.cost ? Math.round((1 - p.cost / p.price) * 100) : null;
+                const cost = Number(p.product_costs?.cost ?? 0);
+                const margin = cost && p.price > 0 ? Math.round((1 - cost / p.price) * 100) : null;
                 return (
                   <tr key={p.id}>
                     <td className="w-14"><Link href={`/admin/produtos/${p.id}`} className="block h-16 w-13 overflow-hidden"><ProductImage product={p} className="h-full w-full" /></Link></td>

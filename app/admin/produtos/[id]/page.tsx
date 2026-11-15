@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductForm } from "@/components/admin/product-form";
 import { createClient } from "@/lib/supabase/server";
-import { PRODUCT_SELECT } from "@/lib/shop";
+import { ADMIN_PRODUCT_SELECT } from "@/lib/shop";
 import type { Product } from "@/lib/types";
 
 export default async function Produto({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ salvo?: string }> }) {
@@ -14,7 +14,7 @@ export default async function Produto({ params, searchParams }: { params: Promis
   ]);
   let product: Product | null = null;
   if (id !== "novo") {
-    const { data } = await supabase.from("products").select(PRODUCT_SELECT).eq("id", id).maybeSingle();
+    const { data } = await supabase.from("products").select(ADMIN_PRODUCT_SELECT).eq("id", id).maybeSingle();
     if (!data) notFound();
     product = data as unknown as Product;
   }

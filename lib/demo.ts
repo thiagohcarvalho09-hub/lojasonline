@@ -59,7 +59,7 @@ function build() {
     const collection = collections[col];
     const sku = `ATL-${art.slice(0, 3).toUpperCase()}-${String(i + 1).padStart(3, "0")}`;
     const p: Row = {
-      id: uid(i + 1, 3), name, slug: slug(name), description, price, compare_at_price: compare, cost, sku, images: [], art, tone, material,
+      id: uid(i + 1, 3), name, slug: slug(name), description, price, compare_at_price: compare, product_costs: { cost }, sku, images: [], art, tone, material,
       care: "Lavagem a seco", tags: [], status: "active", is_featured: featured, wish_count: wish, created_at: ago((i + 1) * 3),
       category_id: category.id, collection_id: collection.id,
       categories: { name: category.name, slug: category.slug },
@@ -71,7 +71,7 @@ function build() {
       const v: Row = {
         id: uid(variants.length + 1, 4), product_id: p.id, size, color: cname, color_hex: hex, price_override: null,
         sku: `${sku}-${cname.slice(0, 2).toUpperCase()}-${size}`, stock: Math.floor(rnd() * 19),
-        products: { id: p.id, name, art, tone, images: [], price, cost },
+        products: { id: p.id, name, art, tone, images: [], price, product_costs: { cost } },
       };
       variants.push(v); p.product_variants.push(v);
     }
@@ -162,7 +162,8 @@ function build() {
   const profiles = [{ id: DEMO_USER.id, full_name: "Ana Costa", email: DEMO_USER.email, role: "owner", created_at: ago(120) }];
 
   return {
-    store_settings: [settings], categories, collections, products, product_variants: variants, customers, customer_stats, orders,
+    store_settings: [settings], categories, collections, products, product_variants: variants,
+    product_costs: products.map((p) => ({ product_id: p.id, ...p.product_costs })), customers, customer_stats, orders,
     order_items: orders.flatMap((o) => o.order_items), order_events: orders.flatMap((o) => o.order_events),
     reviews, coupons, inventory_movements, profiles, forum_topics, forum_replies, newsletter_subscribers: Array.from({ length: 214 }, (_, i) => ({ email: `a${i}@exemplo.com` })),
   } as Record<string, Row[]>;
@@ -178,6 +179,11 @@ const db = () => {
 };
 
 const get = (row: Row, path: string) => path.split(".").reduce((v, k) => (v == null ? v : v[k]), row as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+// Como no banco, o custo só acompanha a peça quando a consulta pede a tabela product_costs (uso do painel).
+const withoutCosts = (v: any): any => // eslint-disable-line @typescript-eslint/no-explicit-any
+  Array.isArray(v) ? v.map(withoutCosts)
+    : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).filter(([k]) => k !== "product_costs").map(([k, x]) => [k, withoutCosts(x)]))
+    : v;
 const like = (value: unknown, pattern: string) => String(value ?? "").toLowerCase().includes(pattern.replace(/%/g, "").toLowerCase());
 
 /** Imita a parte do construtor de consultas do Supabase que a plataforma usa. */
@@ -189,9 +195,10 @@ class Query {
   private write = false;
   private sorts: [string, number][] = [];
   private max = Infinity;
+  private costs = false;
   constructor(table: string) { this.rows = [...(db()[table] ?? [])]; }
   private keep(test: (r: Row) => boolean) { this.rows = this.rows.filter(test); return this; }
-  select(_cols?: string, opts?: { count?: string; head?: boolean }) { this.counted = Boolean(opts?.count); this.head = Boolean(opts?.head); return this; }
+  select(cols?: string, opts?: { count?: string; head?: boolean }) { this.costs = Boolean(cols?.includes("product_costs")); this.counted = Boolean(opts?.count); this.head = Boolean(opts?.head); return this; }
   eq(k: string, v: unknown) { return this.keep((r) => get(r, k) == v); }
   neq(k: string, v: unknown) { return this.keep((r) => get(r, k) != v); }
   lte(k: string, v: number) { return this.keep((r) => Number(get(r, k)) <= v); }
@@ -207,12 +214,14 @@ class Query {
   maybeSingle() { this.one = true; return this; }
   single() { this.one = true; return this; }
   insert() { this.write = true; return this; }
+  upsert() { this.write = true; return this; }
   update() { this.write = true; return this; }
   delete() { this.write = true; return this; }
   then<A, B>(done: (v: { data: any; error: any; count: number | null }) => A, fail?: (e: unknown) => B) { // eslint-disable-line @typescript-eslint/no-explicit-any
     // a primeira ordenação pedida tem prioridade, como no Postgres
     for (const [k, dir] of [...this.sorts].reverse()) this.rows.sort((a, b) => { const x = get(a, k), y = get(b, k); return (x > y ? 1 : x < y ? -1 : 0) * dir; });
     this.rows = this.rows.slice(0, this.max);
+    if (!this.costs) this.rows = withoutCosts(this.rows);
     const result = this.write ? { data: null, error: { message: DEMO_MESSAGE, code: "demo" }, count: null }
       : { data: this.head ? null : this.one ? this.rows[0] ?? null : this.rows, error: null, count: this.counted ? this.rows.length : null };
     return Promise.resolve(result).then(done, fail);

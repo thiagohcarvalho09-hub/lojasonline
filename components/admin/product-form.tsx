@@ -72,7 +72,7 @@ export function ProductForm({ product, categories, collections }: { product: Pro
           <h2 className="display text-2xl sm:col-span-4">Preço</h2>
           <label className="field"><span>Preço (R$)</span><input name="price" required inputMode="decimal" defaultValue={money(product?.price)} className="input tnum" /></label>
           <label className="field"><span>Preço “de”</span><input name="compare_at_price" inputMode="decimal" defaultValue={money(product?.compare_at_price)} className="input tnum" /></label>
-          <label className="field"><span>Custo</span><input name="cost" inputMode="decimal" defaultValue={money(product?.cost)} className="input tnum" /></label>
+          <label className="field"><span>Custo</span><input name="cost" inputMode="decimal" defaultValue={money(product?.product_costs?.cost)} className="input tnum" /></label>
           <label className="field"><span>SKU base</span><input name="sku" defaultValue={product?.sku ?? ""} className="input font-mono text-sm" /></label>
         </section>
 

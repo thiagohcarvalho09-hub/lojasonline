@@ -1,5 +1,6 @@
 import { DemoBar } from "@/components/ui";
 import { ShopHeader } from "@/components/shop/header";
+import { SideMenu } from "@/components/shop/side-menu";
 import { ShopFooter } from "@/components/shop/footer";
 import { CartProvider } from "@/components/shop/cart";
 import { getCategories, getSettings } from "@/lib/shop";
@@ -10,10 +11,13 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   const staff = viewer.profile?.role === "owner" || viewer.profile?.role === "staff";
   return (
     <CartProvider freeOver={settings.free_shipping_over} shippingFlat={settings.shipping_flat}>
-      {!isConfigured && <DemoBar />}
-      <ShopHeader settings={settings} categories={categories} staff={staff} />
-      <main className="mx-auto max-w-[1400px] px-4 md:px-8">{children}</main>
-      <ShopFooter settings={settings} />
+      <SideMenu categories={categories} staff={staff} season={settings.season} />
+      <div className="lg:pl-16">
+        {!isConfigured && <DemoBar />}
+        <ShopHeader settings={settings} categories={categories} staff={staff} />
+        <main className="px-4 md:px-8 2xl:px-12">{children}</main>
+        <ShopFooter settings={settings} />
+      </div>
     </CartProvider>
   );
 }

@@ -141,12 +141,30 @@ function build() {
     return { id: uid(i + 1, 12), variant_id: v.id, delta: i % 5 === 3 ? 6 : -1, reason: i % 5 === 3 ? "restock" : "sale", note: i % 5 === 3 ? "Reposição do ateliê" : `Pedido #${o.number}`,
       order_id: o.id, created_at: o.created_at, product_variants: { size: v.size, color: v.color, products: { name: v.products.name } } };
   });
+  const TOPICS: [string, string, string, string, boolean, number, string[]][] = [
+    ["Lançamentos", "Nova Coleção SS27: o que vocês querem ver primeiro?", "Abrimos o capítulo novo com alfaiataria de ombro marcado e metal líquido. Contem quais peças já entraram na lista de vocês.", "Ana", true, 0.2, ["O sobretudo camelo. Sem discussão.", "Bracelete líquido com o blazer grafite, já estou montando o look.", "Vai ter a bolsa estruturada em marfim de novo?"]],
+    ["Styling", "Blazer de alfaiataria com o quê no fim de semana?", "Comprei o blazer preto e só uso para trabalhar. Como vocês desmontam ele para um sábado?", "Cliente 04", false, 0.6, ["Camiseta branca, jeans reto e a bota de cano alto.", "Tricot canelado por baixo e pantalona areia. Fica leve.", "Lenço de seda no pescoço muda tudo."]],
+    ["Medidas & caimento", "Calça pantalona veste maior?", "Fico entre 38 e 40. Alguém da mesma altura (1,68) pode dizer como ficou o comprimento?", "Cliente 11", false, 1.4, ["Tenho 1,70 e peguei 38, arrasta um pouco com rasteira.", "A cintura é fiel, o quadril tem folga."]],
+    ["Cuidados", "Como guardar as peças de banho de prata", "O brinco escultural escureceu um pouco depois de três meses. Dicas?", "Cliente 07", false, 2.3, ["Saquinho fechado, longe de perfume. E flanela seca depois de usar.", "A equipe recomenda guardar separado das outras joias."]],
+    ["Styling", "Vestido coluna para casamento de dia?", "Tenho um casamento às 11h. O champagne funciona ou fica muito noite?", "Cliente 18", false, 3.1, ["Funciona com sandália baixa e cabelo solto."]],
+    ["Geral", "Troquei de tamanho e chegou em quatro dias", "Só para registrar: a troca do scarpin foi rápida e sem custo.", "Cliente 02", false, 5.2, []],
+  ];
+  const forum_topics: Row[] = [];
+  const forum_replies: Row[] = [];
+  TOPICS.forEach(([category, title, body, author_name, pinned, days, replies], i) => {
+    const id = uid(i + 1, 13);
+    forum_topics.push({ id, title, body, category, author_id: uid(i + 1, 5), author_name, author_staff: author_name === "Ana", pinned, locked: false,
+      replies_count: replies.length, last_activity_at: ago(days), created_at: ago(days + 1.5) });
+    replies.forEach((text, k) => forum_replies.push({ id: uid(i * 5 + k + 1, 14), topic_id: id, body: text, author_id: uid(k + 1, 5),
+      author_name: k === 1 && i === 3 ? "Ana" : `Cliente ${String(((i * 7 + k * 5) % 23) + 1).padStart(2, "0")}`, author_staff: k === 1 && i === 3,
+      created_at: ago(days + (replies.length - k) * 0.1) }));
+  });
   const profiles = [{ id: DEMO_USER.id, full_name: "Ana Costa", email: DEMO_USER.email, role: "owner", created_at: ago(120) }];
 
   return {
     store_settings: [settings], categories, collections, products, product_variants: variants, customers, customer_stats, orders,
     order_items: orders.flatMap((o) => o.order_items), order_events: orders.flatMap((o) => o.order_events),
-    reviews, coupons, inventory_movements, profiles, newsletter_subscribers: Array.from({ length: 214 }, (_, i) => ({ email: `a${i}@exemplo.com` })),
+    reviews, coupons, inventory_movements, profiles, forum_topics, forum_replies, newsletter_subscribers: Array.from({ length: 214 }, (_, i) => ({ email: `a${i}@exemplo.com` })),
   } as Record<string, Row[]>;
 }
 
@@ -169,6 +187,8 @@ class Query {
   private head = false;
   private counted = false;
   private write = false;
+  private sorts: [string, number][] = [];
+  private max = Infinity;
   constructor(table: string) { this.rows = [...(db()[table] ?? [])]; }
   private keep(test: (r: Row) => boolean) { this.rows = this.rows.filter(test); return this; }
   select(_cols?: string, opts?: { count?: string; head?: boolean }) { this.counted = Boolean(opts?.count); this.head = Boolean(opts?.head); return this; }
@@ -182,18 +202,17 @@ class Query {
     const tests = expr.split(",").map((part) => { const [k, op, ...rest] = part.split("."); return { k, op, v: rest.join(".") }; });
     return this.keep((r) => tests.some((t) => (t.op === "ilike" ? like(r[t.k], t.v) : String(r[t.k]) === t.v)));
   }
-  order(k: string, opts?: { ascending?: boolean }) {
-    const dir = opts?.ascending === false ? -1 : 1;
-    this.rows.sort((a, b) => { const x = get(a, k), y = get(b, k); return (x > y ? 1 : x < y ? -1 : 0) * dir; });
-    return this;
-  }
-  limit(n: number) { this.rows = this.rows.slice(0, n); return this; }
+  order(k: string, opts?: { ascending?: boolean }) { this.sorts.push([k, opts?.ascending === false ? -1 : 1]); return this; }
+  limit(n: number) { this.max = n; return this; }
   maybeSingle() { this.one = true; return this; }
   single() { this.one = true; return this; }
   insert() { this.write = true; return this; }
   update() { this.write = true; return this; }
   delete() { this.write = true; return this; }
   then<A, B>(done: (v: { data: any; error: any; count: number | null }) => A, fail?: (e: unknown) => B) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    // a primeira ordenação pedida tem prioridade, como no Postgres
+    for (const [k, dir] of [...this.sorts].reverse()) this.rows.sort((a, b) => { const x = get(a, k), y = get(b, k); return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+    this.rows = this.rows.slice(0, this.max);
     const result = this.write ? { data: null, error: { message: DEMO_MESSAGE, code: "demo" }, count: null }
       : { data: this.head ? null : this.one ? this.rows[0] ?? null : this.rows, error: null, count: this.counted ? this.rows.length : null };
     return Promise.resolve(result).then(done, fail);

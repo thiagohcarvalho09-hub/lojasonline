@@ -47,7 +47,7 @@ export function ProductCard({ product: p, index }: { product: Product; index?: n
 
 export function ProductGrid({ products, numbered = false }: { products: Product[]; numbered?: boolean }) {
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 min-[1700px]:grid-cols-5 min-[2100px]:grid-cols-6">
       {products.map((p, i) => <ProductCard key={p.id} product={p} index={numbered ? i : undefined} />)}
     </div>
   );

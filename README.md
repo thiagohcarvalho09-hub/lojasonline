@@ -4,7 +4,7 @@ Loja online de moda + painel de gestão. Next.js 16 (App Router) na Vercel, Supa
 
 ## O que tem
 
-**Loja** — vitrine, catálogo com filtros (categoria, tamanho, ordem, busca, sale), página de peça com grade de cor/tamanho, avaliações com moderação, lista de desejos, sacola, checkout com CEP automático e cupom, página de acompanhamento do pedido, rastreio por número + e-mail, newsletter.
+**Loja** — vitrine em largura total com menu lateral de três barras e prévia do fórum, fórum da comunidade (tópicos, respostas, moderação), catálogo com filtros (categoria, tamanho, ordem, busca, sale), página de peça com grade de cor/tamanho, avaliações com moderação, lista de desejos, sacola, checkout com CEP automático e cupom, página de acompanhamento do pedido, rastreio por número + e-mail, newsletter.
 
 **Painel (`/admin`)** — visão geral com indicadores, pedidos (fila, detalhe, mudança de status, rastreio, impressão, exportação CSV), nova venda de balcão/WhatsApp, produtos com grade e upload de fotos, coleções e categorias, clientes (ficha, histórico, etiquetas), estoque por variação com histórico de movimentações, cupons, avaliações, relatórios e configurações da loja/equipe.
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Heart, Search, User } from "lucide-react";
 import { Logo, Marquee } from "@/components/ui";
 import { CartButton } from "./cart";
+import { MenuButton } from "./side-menu";
 import type { Settings } from "@/lib/types";
 
 export function ShopHeader({ settings, categories, staff }: { settings: Settings; categories: { name: string; slug: string }[]; staff: boolean }) {
@@ -12,12 +13,14 @@ export function ShopHeader({ settings, categories, staff }: { settings: Settings
       )}
       <header className="sticky top-0 z-40">
         <div className="glass border-x-0 border-t-0">
-          <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-4 py-3 md:px-8">
+          <div className="flex items-center gap-3 px-4 py-3 md:gap-6 md:px-8 2xl:px-12">
+            <MenuButton />
             <Logo sub="moda & acessórios" />
             <nav className="ml-4 hidden items-center gap-6 text-[.95rem] lg:flex" aria-label="Principal">
               <Link href="/loja" className="font-bold hover:text-blue">Loja</Link>
               <Link href="/colecoes" className="hover:text-blue">Coleções</Link>
-              {categories.slice(0, 4).map((c) => <Link key={c.slug} href={`/loja?categoria=${c.slug}`} className="hover:text-blue">{c.name}</Link>)}
+              <Link href="/forum" className="hover:text-blue">Fórum</Link>
+              {categories.slice(0, 3).map((c) => <Link key={c.slug} href={`/loja?categoria=${c.slug}`} className="hover:text-blue">{c.name}</Link>)}
               <Link href="/loja?promo=1" className="bg-lime px-2 py-0.5 font-bold">Sale</Link>
             </nav>
             <form action="/loja" className="relative ml-auto hidden w-64 md:block" role="search">
@@ -33,6 +36,7 @@ export function ShopHeader({ settings, categories, staff }: { settings: Settings
           <nav className="no-scrollbar flex gap-5 overflow-x-auto px-4 pb-3 text-sm lg:hidden" aria-label="Categorias">
             <Link href="/loja" className="shrink-0 font-bold">Loja</Link>
             <Link href="/colecoes" className="shrink-0">Coleções</Link>
+            <Link href="/forum" className="shrink-0">Fórum</Link>
             {categories.map((c) => <Link key={c.slug} href={`/loja?categoria=${c.slug}`} className="shrink-0">{c.name}</Link>)}
           </nav>
         </div>

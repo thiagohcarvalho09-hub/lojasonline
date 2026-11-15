@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Gem, RefreshCcw, Truck } from "lucide-react";
 import { ProductArt, ProductImage } from "@/components/art";
 import { ChromeBlob, Marquee, SectionHead } from "@/components/ui";
+import { ForumPreview } from "@/components/shop/forum-preview";
 import { ProductCard, ProductGrid } from "@/components/shop/product-card";
 import { getCatalog, getCategories, getCollections, getSettings } from "@/lib/shop";
 import { brl } from "@/lib/format";
@@ -15,7 +16,8 @@ export default async function Home() {
   const lead = collections.find((c) => c.is_featured) ?? collections[0];
 
   return (
-    <>
+    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_21rem] xl:gap-8 2xl:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="min-w-0">
       {/* ───── Abertura ───── */}
       <section className="pt-8 md:pt-12">
         <p className="eyebrow">{settings.tagline} / {settings.season}</p>
@@ -51,13 +53,13 @@ export default async function Home() {
         </div>
       </section>
 
-      <Marquee className="display -mx-4 mt-10 border-y border-ink py-3 text-3xl md:-mx-8" items={[settings.hero_title, settings.season, "Alfaiataria", "Metal líquido", "Couro estruturado"]} />
+      <Marquee className="display mt-10 border-y border-ink py-3 text-3xl" items={[settings.hero_title, settings.season, "Alfaiataria", "Metal líquido", "Couro estruturado"]} />
 
       {/* ───── Mais desejados ───── */}
       <section className="mt-16">
         <SectionHead eyebrow="Ranking da semana" title="Mais desejados" action={<Link href="/loja?ordem=desejados" className="link">Ver ranking completo <ArrowRight className="h-4 w-4" /></Link>} />
         <div className="rule mb-6" />
-        <ProductGrid products={wanted.slice(0, 4)} numbered />
+        <ProductGrid products={wanted.slice(0, 8)} numbered />
       </section>
 
       {/* ───── Coleções ───── */}
@@ -102,8 +104,8 @@ export default async function Home() {
       <section className="mt-24">
         <SectionHead eyebrow="Acabou de chegar" title="Novidades" action={<Link href="/loja" className="link">Ver tudo <ArrowRight className="h-4 w-4" /></Link>} />
         <div className="rule mb-6" />
-        <div className="no-scrollbar -mx-4 flex snap-x gap-4 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-4 md:px-0">
-          {latest.slice(0, 4).map((p) => <div key={p.id} className="w-[62vw] shrink-0 snap-start md:w-auto"><ProductCard product={p} /></div>)}
+        <div className="no-scrollbar -mx-4 flex snap-x gap-4 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-4 md:gap-y-10 md:px-0">
+          {latest.slice(0, 8).map((p) => <div key={p.id} className="w-[62vw] shrink-0 snap-start md:w-auto"><ProductCard product={p} /></div>)}
         </div>
       </section>
 
@@ -121,6 +123,8 @@ export default async function Home() {
           </div>
         ))}
       </section>
-    </>
+    </div>
+    <ForumPreview />
+    </div>
   );
 }

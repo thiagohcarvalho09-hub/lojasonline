@@ -42,3 +42,13 @@ export function periodRange(key: string | undefined) {
   else { from.setDate(1); from.setHours(0, 0, 0, 0); }
   return { from: from.toISOString(), to: to.toISOString(), key: key && PERIODS[key] ? key : "mes" };
 }
+
+export function timeAgo(d: string | Date) {
+  const min = Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60000));
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  if (min < 1440) return `há ${Math.round(min / 60)} h`;
+  if (min < 43200) return `há ${Math.round(min / 1440)} d`;
+  return dateShort(d);
+}
+export const FORUM_CATEGORIES = ["Styling", "Medidas & caimento", "Cuidados", "Lançamentos", "Geral"];

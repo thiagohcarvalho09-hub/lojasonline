@@ -112,7 +112,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       </div>
 
       {/* Canais + reposição */}
-      <section className="grid items-center gap-6 border-t border-ink py-6 xl:grid-cols-[auto_1fr_auto]">
+      <section className="grid items-center gap-x-8 gap-y-5 border-t border-ink py-6 xl:grid-cols-[auto_1fr] min-[1700px]:grid-cols-[auto_1fr_auto]">
         <h2 className="display text-[2.4rem] leading-none">Vendas por canal</h2>
         <div className="grid gap-6 sm:grid-cols-3 sm:divide-x sm:divide-ink">
           {(["online", "store", "whatsapp"] as const).map((k) => {
@@ -120,13 +120,13 @@ export default async function Overview({ searchParams }: { searchParams: Promise
             const Icon = icons[k];
             return (
               <div key={k} className="sm:pl-6 sm:first:pl-0">
-                <div className="flex items-center gap-3"><Icon className="h-6 w-6" strokeWidth={1.4} /><span className="flex-1">{CHANNEL[k]}</span><span className="figure text-2xl">{pct}%</span></div>
+                <div className="flex items-center gap-3"><Icon className="h-6 w-6" strokeWidth={1.4} /><span className="flex-1 whitespace-nowrap">{CHANNEL[k]}</span><span className="figure text-2xl">{pct}%</span></div>
                 <div className="mt-2 h-2.5 bg-ink/15"><div className="h-full bg-blue" style={{ width: `${pct}%` }} /></div>
               </div>
             );
           })}
         </div>
-        <Link href="/admin/estoque?filtro=baixo" className="flex items-center gap-4">
+        <Link href="/admin/estoque?filtro=baixo" className="flex items-center gap-4 xl:col-span-2 min-[1700px]:col-span-1">
           <span className="glass-lime eyebrow flex h-12 items-center gap-3 px-5"><Box className="h-5 w-5" strokeWidth={1.5} /> Reposição prioritária · {lowCount ?? 0} {lowCount === 1 ? "peça" : "peças"}</span>
           <ArrowRight className="h-5 w-5" />
         </Link>

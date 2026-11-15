@@ -1,11 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createDemoClient } from "@/lib/demo";
 
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 export const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 export const isConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
-export async function createClient() {
+/** Cliente do Supabase da requisição — ou, sem as variáveis de ambiente, o catálogo de demonstração. */
+export async function createClient(): Promise<SupabaseClient> {
+  if (!isConfigured) return createDemoClient() as unknown as SupabaseClient;
   const store = await cookies();
   return createServerClient(SUPABASE_URL, SUPABASE_KEY, {
     cookies: {

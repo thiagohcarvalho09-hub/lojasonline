@@ -32,6 +32,7 @@ export function ProductForm({ product, categories, collections }: { product: Pro
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) { setUploadError("Modo demonstração: conecte o Supabase para enviar fotos."); return; }
     setUploading(true); setUploadError("");
     const supabase = createClient();
     const added: string[] = [];

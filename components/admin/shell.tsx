@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Bell, Box, ChevronDown, ExternalLink, Home, LogOut, Menu, Search, Settings, Shirt, ShoppingBag, Star, Tag, Ticket, Users, X } from "lucide-react";
-import { Logo } from "@/components/ui";
+import { DemoBar, Logo } from "@/components/ui";
 import { signOut } from "@/app/login/actions";
 
 const NAV = [
@@ -13,7 +13,7 @@ const NAV = [
   ["/admin/configuracoes", "Configurações", Settings],
 ] as const;
 
-export function AdminShell({ children, user, alerts }: { children: React.ReactNode; user: { name: string; role: string }; alerts: { pending: number; lowStock: number; reviews: number } }) {
+export function AdminShell({ children, user, alerts, demo }: { children: React.ReactNode; demo?: boolean; user: { name: string; role: string }; alerts: { pending: number; lowStock: number; reviews: number } }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState<"" | "user" | "bell">("");
@@ -86,6 +86,7 @@ export function AdminShell({ children, user, alerts }: { children: React.ReactNo
             )}
           </div>
         </header>
+        {demo && <DemoBar />}
         <main className="px-4 pb-16 pt-6 md:px-8">{children}</main>
       </div>
     </div>

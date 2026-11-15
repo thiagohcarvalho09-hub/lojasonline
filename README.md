@@ -10,6 +10,10 @@ Loja online de moda + painel de gestão. Next.js 16 (App Router) na Vercel, Supa
 
 **Backend** — rotas em `app/api/*` e server actions em `app/admin/actions.ts`. As regras críticas ficam no banco (`supabase/migrations/0001_schema.sql`): `place_order` confere preço, estoque, cupom e frete e fecha o pedido numa transação; `set_order_status` devolve peças ao estoque em cancelamentos; RLS limita tudo que é gestão à equipe.
 
+## Modo demonstração
+
+Sem as variáveis do Supabase, a plataforma inteira (loja e painel) abre com um catálogo de exemplo em memória (`lib/demo.ts`), somente leitura e sem login. Serve para ver a estética e navegar; ao conectar o banco, passa a usar os dados reais automaticamente.
+
 ## Colocar no ar
 
 1. Crie um projeto no Supabase e rode, em ordem, os arquivos de `supabase/migrations/` (o `0002_seed.sql` é só o catálogo de demonstração).

@@ -48,7 +48,7 @@ export function Kpi({ label, value, delta, hint }: { label: string; value: strin
     <div className="min-w-0 px-0 py-4 md:px-6 md:first:pl-0">
       <p className="eyebrow">{label}</p>
       <div className="mt-2 flex flex-wrap items-end gap-3">
-        <span className="figure text-[clamp(2.4rem,4vw,3.6rem)]">{value}</span>
+        <span className="figure whitespace-nowrap text-[clamp(2.1rem,3.3vw,3.4rem)]">{value}</span>
         {delta != null && Number.isFinite(delta) && (
           <span className={`glass-lime tnum mb-1 px-2 py-0.5 text-sm font-bold ${delta < 0 ? "!bg-none !bg-[#f6d5cf]" : ""}`}>{delta >= 0 ? "+" : "−"}{Math.abs(delta).toFixed(1).replace(".", ",")}% {delta >= 0 ? "↗" : "↘"}</span>
         )}

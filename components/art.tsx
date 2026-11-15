@@ -7,18 +7,18 @@ const INK = "#0b0b0c";
 const shapes: Record<string, (c: string, id: string) => ReactNode> = {
   blazer: (c) => (
     <g>
-      <path d="M122 150 172 112l28 46 28-46 50 38 34 118-30 10-4 152H122l-4-152-30-10Z" fill={c} />
+      <path d="M172 112 200 158 228 112 280 146 308 332 276 338 262 222V430H138V222l-14 116-32-6 28-186Z" fill={c} />
       <path d="M172 112 200 250l28-138M200 250v180" stroke="#fff" strokeOpacity=".22" strokeWidth="2" fill="none" />
       <path d="m172 112-22 66 34 20M228 112l22 66-34 20" stroke="#fff" strokeOpacity=".18" strokeWidth="2" fill="none" />
       <circle cx="200" cy="290" r="4" fill="#fff" fillOpacity=".5" /><circle cx="200" cy="330" r="4" fill="#fff" fillOpacity=".5" />
-      <path d="M138 345h34M228 345h34" stroke="#fff" strokeOpacity=".2" strokeWidth="2" />
+      <path d="M150 345h28M222 345h28" stroke="#fff" strokeOpacity=".2" strokeWidth="2" />
     </g>
   ),
   coat: (c) => (
     <g>
-      <path d="M126 120 174 88l26 40 26-40 48 32 32 140-28 8-2 222H124l-2-222-28-8Z" fill={c} />
+      <path d="M174 88 200 128 226 88 276 120 304 322 272 328 260 212V458H140V212l-12 116-32-6 28-202Z" fill={c} />
       <path d="M174 88 200 230l26-142M200 230v220" stroke="#fff" strokeOpacity=".22" strokeWidth="2" fill="none" />
-      <path d="M124 300h152" stroke="#fff" strokeOpacity=".3" strokeWidth="6" />
+      <path d="M140 300h120" stroke="#fff" strokeOpacity=".3" strokeWidth="6" />
       <rect x="190" y="292" width="20" height="16" fill="none" stroke="#fff" strokeOpacity=".6" strokeWidth="2" />
     </g>
   ),

@@ -35,6 +35,8 @@ body {
 ::selection { background: var(--color-lime); color: var(--color-ink); }
 :focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
 
+/* Em @layer components para que os utilitários do Tailwind (posição, altura, padding) prevaleçam. */
+@layer components {
 /* ───── Tipografia editorial ───── */
 .display { font-family: var(--font-display); text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.92; font-weight: 400; }
 .serif { font-family: var(--font-serif); font-style: italic; letter-spacing: -0.02em; line-height: 0.95; font-weight: 400; }
@@ -54,7 +56,6 @@ body {
 
 /* ───── Vidro ───── */
 .glass {
-  position: relative;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28));
   -webkit-backdrop-filter: blur(22px) saturate(170%);
   backdrop-filter: blur(22px) saturate(170%);
@@ -69,7 +70,6 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 .glass-dark {
-  position: relative;
   background: linear-gradient(140deg, rgba(28, 28, 31, 0.78), rgba(11, 11, 12, 0.62));
   -webkit-backdrop-filter: blur(22px) saturate(160%);
   backdrop-filter: blur(22px) saturate(160%);
@@ -85,7 +85,7 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 14px 30px -18px rgba(120, 140, 0, 0.7);
 }
 /* reflexo que atravessa o vidro */
-.sheen { overflow: hidden; }
+.sheen { position: relative; overflow: hidden; }
 .sheen::before {
   content: ""; position: absolute; top: -20%; bottom: -20%; left: 0; width: 34%; z-index: 1; pointer-events: none;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
@@ -109,7 +109,7 @@ body {
 .stitch-b { border-bottom: 1px dashed rgba(11, 11, 12, 0.4); }
 .stitch-t { border-top: 1px dashed rgba(11, 11, 12, 0.4); }
 .rule { border-bottom: 1px solid var(--color-ink); }
-.hangtag { position: relative; clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 50%); padding-left: 26px; }
+.hangtag { clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 50%); padding-left: 26px; }
 .hangtag::before { content: ""; position: absolute; left: 12px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--color-paper); box-shadow: inset 0 0 0 1px rgba(11, 11, 12, 0.5); }
 .selvedge { background-image: repeating-linear-gradient(90deg, var(--color-ink) 0 8px, transparent 8px 14px); height: 3px; }
 .tape { background-image: repeating-linear-gradient(90deg, rgba(11, 11, 12, 0.55) 0 1px, transparent 1px 10px), repeating-linear-gradient(90deg, rgba(11, 11, 12, 0.8) 0 1px, transparent 1px 50px); background-size: 100% 6px, 100% 12px; background-repeat: no-repeat; background-position: bottom; }
@@ -161,6 +161,7 @@ select.input { appearance: none; padding-right: 2.2rem; background-image: url("d
 .rise { animation: var(--animate-rise); }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .marquee, .sheen::before, .rise, [class*="animate-"] { animation: none !important; }

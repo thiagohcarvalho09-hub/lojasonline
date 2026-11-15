@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminShell } from "@/components/admin/shell";
-import { Setup } from "@/components/setup";
 import { getViewer, isConfigured } from "@/lib/supabase/server";
 import { getSettings } from "@/lib/shop";
 import { signOut } from "@/app/login/actions";
@@ -10,7 +9,6 @@ import { signOut } from "@/app/login/actions";
 export const metadata: Metadata = { title: { default: "Painel", template: "%s · ATELIER workspace" }, robots: { index: false } };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  if (!isConfigured) return <Setup />;
   const { supabase, user, profile } = await getViewer();
   if (!user) redirect("/login");
   if (profile?.role !== "owner" && profile?.role !== "staff") {
@@ -31,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     supabase.from("reviews").select("id", { count: "exact", head: true }).eq("approved", false),
   ]);
   return (
-    <AdminShell user={{ name: profile.full_name || user.email || "Equipe", role: profile.role }} alerts={{ pending: pending.count ?? 0, lowStock: low.count ?? 0, reviews: reviews.count ?? 0 }}>
+    <AdminShell demo={!isConfigured} user={{ name: profile.full_name || user.email || "Equipe", role: profile.role }} alerts={{ pending: pending.count ?? 0, lowStock: low.count ?? 0, reviews: reviews.count ?? 0 }}>
       {children}
     </AdminShell>
   );

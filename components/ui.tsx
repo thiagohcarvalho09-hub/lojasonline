@@ -99,3 +99,12 @@ export function CareLabel({ material, care, sku }: { material: string; care: str
     </div>
   );
 }
+
+/** Faixa exibida enquanto o Supabase não está conectado. */
+export function DemoBar() {
+  return (
+    <p role="status" className="glass-lime eyebrow border-x-0 px-4 py-2 text-center text-[.62rem]">
+      Modo demonstração · dados de exemplo · nada é salvo até o banco ser conectado
+    </p>
+  );
+}

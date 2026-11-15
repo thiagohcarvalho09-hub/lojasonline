@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { LoginForm } from "./form";
 import { Barcode, ChromeBlob, Logo } from "@/components/ui";
 import { ProductArt } from "@/components/art";
-import { Setup } from "@/components/setup";
 import { isConfigured } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Entrar" };
 
 export default function Login() {
-  if (!isConfigured) return <Setup />;
   return (
     <main className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
       <section className="relative hidden overflow-hidden bg-ink text-paper lg:block">
@@ -26,7 +25,13 @@ export default function Login() {
       <section className="grid place-items-center p-6">
         <div className="w-full max-w-md">
           <div className="mb-8 lg:hidden"><Logo /></div>
-          <LoginForm />
+          {isConfigured ? <LoginForm /> : (
+            <div className="glass bevel p-8">
+              <h2 className="serif text-5xl">Modo demonstração.</h2>
+              <p className="mt-4 text-ink/70">O banco ainda não está conectado, então o painel abre com dados de exemplo e sem login.</p>
+              <Link href="/admin" className="btn btn-blue mt-6 w-full">Abrir o painel</Link>
+            </div>
+          )}
         </div>
       </section>
     </main>

@@ -9,12 +9,13 @@ import { getViewer, isConfigured } from "@/lib/supabase/server";
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const [settings, categories, viewer] = await Promise.all([getSettings(), getCategories(), getViewer()]);
   const staff = viewer.profile?.role === "owner" || viewer.profile?.role === "staff";
+  const email = viewer.user?.email ?? null;
   return (
     <CartProvider freeOver={settings.free_shipping_over} shippingFlat={settings.shipping_flat}>
-      <SideMenu categories={categories} staff={staff} season={settings.season} />
+      <SideMenu categories={categories} staff={staff} email={email} season={settings.season} />
       <div className="lg:pl-16">
         {!isConfigured && <DemoBar />}
-        <ShopHeader settings={settings} categories={categories} staff={staff} />
+        <ShopHeader settings={settings} categories={categories} staff={staff} signedIn={Boolean(email)} />
         <main className="px-4 md:px-8 2xl:px-12">{children}</main>
         <ShopFooter settings={settings} />
       </div>

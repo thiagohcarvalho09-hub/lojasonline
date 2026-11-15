@@ -21,7 +21,8 @@ export async function signUp(_: AuthState, fd: FormData): Promise<AuthState> {
   });
   if (error) return { error: error.message };
   if (!data.session) return { ok: "Conta criada. Confirme pelo link enviado ao seu e-mail e depois entre." };
-  redirect("/admin");
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.session.user.id).maybeSingle();
+  redirect(profile?.role === "owner" || profile?.role === "staff" ? "/admin" : "/");
 }
 
 export async function signOut() {

@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LoginForm } from "./form";
 import { Barcode, ChromeBlob, Logo } from "@/components/ui";
 import { ProductArt } from "@/components/art";
-import { isConfigured } from "@/lib/supabase/server";
+import { getViewer, isConfigured } from "@/lib/supabase/server";
+import { signOut } from "./actions";
 
 export const metadata: Metadata = { title: "Entrar" };
 
-export default function Login() {
+export default async function Login() {
+  // Quem já está conectado não vê o formulário de novo: equipe vai ao painel, cliente vê a própria conta.
+  const { user, profile } = isConfigured ? await getViewer() : { user: null, profile: null };
+  if (user && (profile?.role === "owner" || profile?.role === "staff")) redirect("/admin");
   return (
     <main className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
       <section className="relative hidden overflow-hidden bg-ink text-paper lg:block">
@@ -25,7 +30,13 @@ export default function Login() {
       <section className="grid place-items-center p-6">
         <div className="w-full max-w-md">
           <div className="mb-8 lg:hidden"><Logo /></div>
-          {isConfigured ? <LoginForm /> : (
+          {user ? (
+            <div className="glass bevel p-8">
+              <h2 className="serif text-5xl">Você já está conectada.</h2>
+              <p className="mt-4 text-ink/70">Conta: <strong>{user.email}</strong>. Ela ainda não faz parte da equipe, por isso o painel não abre. A proprietária libera o acesso em Configurações → Equipe.</p>
+              <div className="mt-6 flex gap-3"><Link href="/" className="btn btn-ink">Ir para a loja</Link><form action={signOut}><button className="btn btn-ghost">Sair e trocar de conta</button></form></div>
+            </div>
+          ) : isConfigured ? <LoginForm /> : (
             <div className="glass bevel p-8">
               <h2 className="serif text-5xl">Modo demonstração.</h2>
               <p className="mt-4 text-ink/70">O banco ainda não está conectado, então o painel abre com dados de exemplo e sem login.</p>

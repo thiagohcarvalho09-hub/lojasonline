@@ -5,7 +5,7 @@ import { CartButton } from "./cart";
 import { MenuButton } from "./side-menu";
 import type { Settings } from "@/lib/types";
 
-export function ShopHeader({ settings, categories, staff }: { settings: Settings; categories: { name: string; slug: string }[]; staff: boolean }) {
+export function ShopHeader({ settings, categories, staff, signedIn }: { settings: Settings; categories: { name: string; slug: string }[]; staff: boolean; signedIn: boolean }) {
   return (
     <>
       {settings.announcement && (
@@ -29,7 +29,7 @@ export function ShopHeader({ settings, categories, staff }: { settings: Settings
             </form>
             <div className="ml-auto flex items-center md:ml-0">
               <Link href="/favoritos" className="grid h-11 w-11 place-items-center" aria-label="Lista de desejos"><Heart className="h-5 w-5" strokeWidth={1.6} /></Link>
-              <Link href={staff ? "/admin" : "/login"} className="grid h-11 w-11 place-items-center" aria-label={staff ? "Painel da loja" : "Entrar"}><User className="h-5 w-5" strokeWidth={1.6} /></Link>
+              <Link href={staff ? "/admin" : "/login"} className="grid h-11 w-11 place-items-center" aria-label={staff ? "Painel da loja" : signedIn ? "Minha conta" : "Entrar"}><User className="h-5 w-5" strokeWidth={1.6} /></Link>
               <CartButton />
             </div>
           </div>

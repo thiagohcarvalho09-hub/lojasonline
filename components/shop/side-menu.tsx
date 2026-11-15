@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, MessagesSquare, PackageSearch, User, X } from "lucide-react";
+import { Heart, LogOut, MessagesSquare, PackageSearch, User, X } from "lucide-react";
 import { Barcode, Logo } from "@/components/ui";
+import { signOut } from "@/app/login/actions";
 
 const OPEN_EVENT = "atelier:menu";
 
@@ -25,7 +26,7 @@ export function MenuButton() {
 }
 
 /** Faixa lateral com o menu de três barras; abre um painel de vidro com toda a navegação. */
-export function SideMenu({ categories, staff, season }: { categories: { name: string; slug: string }[]; staff: boolean; season: string }) {
+export function SideMenu({ categories, staff, email, season }: { categories: { name: string; slug: string }[]; staff: boolean; email: string | null; season: string }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
 
@@ -84,7 +85,15 @@ export function SideMenu({ categories, staff, season }: { categories: { name: st
           <ul className="mt-8 space-y-2 border-t border-paper/15 pt-6 text-sm">
             <li><Link href="/favoritos" onClick={() => setOpen(false)} className="flex items-center gap-3 hover:text-lime"><Heart className="h-4 w-4" /> Lista de desejos</Link></li>
             <li><Link href="/rastrear" onClick={() => setOpen(false)} className="flex items-center gap-3 hover:text-lime"><PackageSearch className="h-4 w-4" /> Rastrear pedido</Link></li>
-            <li><Link href={staff ? "/admin" : "/login"} onClick={() => setOpen(false)} className="flex items-center gap-3 hover:text-lime"><User className="h-4 w-4" /> {staff ? "Painel da loja" : "Entrar ou criar conta"}</Link></li>
+            {staff && <li><Link href="/admin" onClick={() => setOpen(false)} className="flex items-center gap-3 hover:text-lime"><User className="h-4 w-4" /> Painel da loja</Link></li>}
+            {email ? (
+              <li className="flex items-center justify-between gap-3 text-paper/70">
+                <span className="flex min-w-0 items-center gap-3">{!staff && <User className="h-4 w-4 shrink-0" />}<span className="truncate">{email}</span></span>
+                <form action={signOut}><button className="flex items-center gap-2 hover:text-lime"><LogOut className="h-4 w-4" /> Sair</button></form>
+              </li>
+            ) : (
+              <li><Link href="/login" onClick={() => setOpen(false)} className="flex items-center gap-3 hover:text-lime"><User className="h-4 w-4" /> Entrar ou criar conta</Link></li>
+            )}
           </ul>
           <div className="mt-auto pt-8"><Barcode value={`menu-${season}`} className="h-7 w-36 text-paper/50" /><p className="mt-1 font-mono text-[.6rem] tracking-[.3em] text-paper/40">{season} · N° 0001</p></div>
         </nav>

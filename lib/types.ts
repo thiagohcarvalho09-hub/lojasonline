@@ -17,8 +17,17 @@ export type Product = {
   product_costs?: { cost: number } | null;
   /** Fornecedor (dropshipping/encomenda): tabela restrita à equipe, só vem nas consultas do painel. */
   product_suppliers?: ProductSupplier | null;
+  /** Variações com o código do fornecedor; só vem nas consultas do painel. */
+  admin_variants?: { id: string; variant_suppliers: VariantSupplier | null }[];
 };
-export type ProductSupplier = { supplier_name: string; supplier_url: string; supplier_sku: string; notes: string };
+export type ProductSupplier = { supplier_id: string | null; supplier_name: string; supplier_url: string; supplier_sku: string; notes: string };
+/** Código do fornecedor por tamanho/cor (e disponibilidade no fornecedor). Só a equipe lê. */
+export type VariantSupplier = { supplier_sku: string; available: boolean };
+export type Supplier = {
+  id: string; name: string; contact_name: string; email: string; whatsapp: string; website: string;
+  lead_time_days: number; return_policy: string; notes: string; is_active: boolean; created_at: string;
+};
+export type SupplierOrderStatus = "to_order" | "ordered" | "shipped" | "delivered" | "cancelled";
 export type Collection = {
   id: string; name: string; slug: string; description: string; season: string;
   image_url: string | null; tone: string; is_active: boolean; is_featured: boolean; position: number;

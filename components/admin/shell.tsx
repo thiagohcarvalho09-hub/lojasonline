@@ -2,24 +2,25 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Bell, Box, ChevronDown, ExternalLink, Home, LogOut, Menu, Search, Settings, Shirt, ShoppingBag, Star, Tag, Ticket, Users, X } from "lucide-react";
+import { BarChart3, Bell, Box, ChevronDown, ClipboardList, ExternalLink, Factory, Home, LogOut, Menu, Search, Settings, Shirt, ShoppingBag, Star, Tag, Ticket, Users, X } from "lucide-react";
 import { Logo } from "@/components/ui";
 import { signOut } from "@/app/login/actions";
 
 const NAV = [
   ["/admin", "Visão geral", Home], ["/admin/pedidos", "Pedidos", ShoppingBag], ["/admin/colecoes", "Coleções", Tag],
-  ["/admin/produtos", "Produtos", Shirt], ["/admin/clientes", "Clientes", Users], ["/admin/estoque", "Estoque", Box],
+  ["/admin/produtos", "Produtos", Shirt], ["/admin/compras", "A pedir", ClipboardList], ["/admin/fornecedores", "Fornecedores", Factory],
+  ["/admin/clientes", "Clientes", Users], ["/admin/estoque", "Estoque", Box],
   ["/admin/cupons", "Cupons", Ticket], ["/admin/avaliacoes", "Avaliações", Star], ["/admin/relatorios", "Relatórios", BarChart3],
   ["/admin/configuracoes", "Configurações", Settings],
 ] as const;
 
-export function AdminShell({ children, user, alerts }: { children: React.ReactNode; user: { name: string; role: string }; alerts: { pending: number; lowStock: number; reviews: number } }) {
+export function AdminShell({ children, user, alerts }: { children: React.ReactNode; user: { name: string; role: string }; alerts: { pending: number; lowStock: number; reviews: number; toOrder: number } }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState<"" | "user" | "bell">("");
   const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
-  const total = alerts.pending + alerts.lowStock + alerts.reviews;
-  const badge: Record<string, number> = { "/admin/pedidos": alerts.pending, "/admin/estoque": alerts.lowStock, "/admin/avaliacoes": alerts.reviews };
+  const total = alerts.pending + alerts.lowStock + alerts.reviews + alerts.toOrder;
+  const badge: Record<string, number> = { "/admin/pedidos": alerts.pending, "/admin/estoque": alerts.lowStock, "/admin/avaliacoes": alerts.reviews, "/admin/compras": alerts.toOrder };
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[13.5rem_1fr]">
@@ -71,6 +72,7 @@ export function AdminShell({ children, user, alerts }: { children: React.ReactNo
                 {alerts.pending > 0 && <Link href="/admin/pedidos?status=pending" className="block p-2 hover:bg-white/60"><b>{alerts.pending}</b> pedidos aguardando pagamento</Link>}
                 {alerts.lowStock > 0 && <Link href="/admin/estoque?filtro=baixo" className="block p-2 hover:bg-white/60"><b>{alerts.lowStock}</b> variações com estoque baixo</Link>}
                 {alerts.reviews > 0 && <Link href="/admin/avaliacoes" className="block p-2 hover:bg-white/60"><b>{alerts.reviews}</b> avaliações para moderar</Link>}
+                {alerts.toOrder > 0 && <Link href="/admin/compras" className="block p-2 hover:bg-white/60"><b>{alerts.toOrder}</b> pedidos a fazer ao fornecedor</Link>}
               </div>
             )}
           </div>

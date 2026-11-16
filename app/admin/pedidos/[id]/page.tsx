@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { FULFILLMENT, type Fulfillment } from "@/lib/fulfillment";
-import type { ProductSupplier } from "@/lib/types";
+import { FULFILLMENT, SUPPLIER_STATUS, type Fulfillment } from "@/lib/fulfillment";
+import type { ProductSupplier, SupplierOrderStatus } from "@/lib/types";
+
+type SupplierOrderSummary = { id: string; supplier_name: string; status: SupplierOrderStatus; cost: number | null; supplier_ref: string; tracking_code: string };
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { ProductImage } from "@/components/art";
@@ -24,7 +26,7 @@ export default async function Pedido({ params }: { params: Promise<{ id: string 
   const { id } = await params;
   const supabase = await createClient();
   const { data: o } = await supabase.from("orders")
-    .select("*, customers(id, name, email, phone, cpf), order_items(*, products(art, tone, images, product_suppliers(supplier_name, supplier_url, supplier_sku, notes))), order_events(*)")
+    .select("*, customers(id, name, email, phone, cpf), order_items(*, products(art, tone, images, product_suppliers(supplier_id, supplier_name, supplier_url, supplier_sku, notes))), order_events(*), supplier_orders(id, supplier_name, status, cost, supplier_ref, tracking_code)")
     .eq("id", id).maybeSingle();
   if (!o) notFound();
   const c = o.customers as { id: string; name: string; email: string; phone: string; cpf: string } | null;
@@ -70,6 +72,19 @@ export default async function Pedido({ params }: { params: Promise<{ id: string 
               <div className="flex items-baseline justify-between border-t border-ink pt-2"><dt className="eyebrow">Total · {PAYMENT[o.payment_method]}</dt><dd className="figure text-3xl">{brl(o.total)}</dd></div>
             </dl>
           </Panel>
+
+          {(o.supplier_orders as SupplierOrderSummary[]).length > 0 && (
+            <Panel title="Pedidos ao fornecedor" action={<Link href="/admin/compras" className="link">Abrir A pedir</Link>}>
+              <ul className="space-y-2 text-sm">
+                {(o.supplier_orders as SupplierOrderSummary[]).map((s) => (
+                  <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-ink/10 pb-2">
+                    <span><b>{s.supplier_name || "Sem fornecedor"}</b>{s.supplier_ref && <span className="font-mono text-xs text-ink/60"> · nº {s.supplier_ref}</span>}{s.tracking_code && <span className="font-mono text-xs text-ink/60"> · rastreio {s.tracking_code}</span>}</span>
+                    <span className="flex items-center gap-2">{s.cost !== null && <span className="tnum">{brl(s.cost)}</span>}<span className={`badge ${s.status === "to_order" ? "badge-lime" : s.status === "cancelled" ? "badge-red" : "badge-stone"}`}>{SUPPLIER_STATUS[s.status]}</span></span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
 
           <Panel title="Histórico">
             <ol>

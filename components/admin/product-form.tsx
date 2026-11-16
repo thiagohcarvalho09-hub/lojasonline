@@ -10,16 +10,17 @@ import { ActionForm, Submit } from "./action-form";
 import { deleteProduct, saveProduct } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/client";
 
-type Row = { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number };
+type Row = { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number; supplier_sku: string };
 type Opt = { id: string; name: string };
 
 const TONES = ["#cfcac0", "#c9c5bd", "#c3c7cb", "#d6d0c4", "#bdb8b3", "#dcd8cf", "#2a2a2d"];
 const money = (n: number | null | undefined) => (n == null ? "" : Number(n).toFixed(2).replace(".", ","));
 
-export function ProductForm({ product, categories, collections }: { product: Product | null; categories: Opt[]; collections: Opt[] }) {
+export function ProductForm({ product, categories, collections, suppliers }: { product: Product | null; categories: Opt[]; collections: Opt[]; suppliers: Opt[] }) {
+  const supplierSku = new Map((product?.admin_variants ?? []).map((v) => [v.id, v.variant_suppliers?.supplier_sku ?? ""]));
   const [rows, setRows] = useState<Row[]>(
-    product?.product_variants?.map((v) => ({ id: v.id, size: v.size, color: v.color, color_hex: v.color_hex, sku: v.sku ?? "", stock: v.stock }))
-      ?? [{ size: "Único", color: "Preto", color_hex: "#0b0b0c", sku: "", stock: 0 }],
+    product?.product_variants?.map((v) => ({ id: v.id, size: v.size, color: v.color, color_hex: v.color_hex, sku: v.sku ?? "", stock: v.stock, supplier_sku: supplierSku.get(v.id) ?? "" }))
+      ?? [{ size: "Único", color: "Preto", color_hex: "#0b0b0c", sku: "", stock: 0, supplier_sku: "" }],
   );
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [art, setArt] = useState(product?.art ?? "blazer");
@@ -106,8 +107,13 @@ export function ProductForm({ product, categories, collections }: { product: Pro
           <p className="self-end pb-3 text-xs text-ink/55">Aparece na página da peça como “Envio em até N dias úteis”. Use 0 para não mostrar.</p>
           {onDemand && <>
             <h3 className="eyebrow sm:col-span-2">Fornecedor <span className="font-normal normal-case tracking-normal text-ink/55">— só a equipe vê</span></h3>
-            <label className="field"><span>Nome do fornecedor</span><input name="supplier_name" defaultValue={product?.product_suppliers?.supplier_name} className="input" /></label>
-            <label className="field"><span>Código da peça no fornecedor</span><input name="supplier_sku" defaultValue={product?.product_suppliers?.supplier_sku} className="input font-mono text-sm" /></label>
+            <label className="field"><span>Fornecedor</span>
+              <select name="supplier_id" defaultValue={product?.product_suppliers?.supplier_id ?? ""} className="input">
+                <option value="">{suppliers.length ? "Escolha o fornecedor" : "Nenhum fornecedor cadastrado"}</option>
+                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <Link href="/admin/fornecedores" target="_blank" className="mt-1 text-xs underline">Cadastrar ou editar fornecedores</Link></label>
+            <label className="field"><span>Código geral da peça no fornecedor</span><input name="supplier_sku" defaultValue={product?.product_suppliers?.supplier_sku} className="input font-mono text-sm" /></label>
             <label className="field sm:col-span-2"><span>Link da peça no fornecedor</span>
               <div className="flex gap-2"><input name="supplier_url" type="url" value={supplierUrl} onChange={(e) => setSupplierUrl(e.target.value)} placeholder="https://" className="input flex-1" />
                 {/^https?:\/\//.test(supplierUrl) && <a href={supplierUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm self-center" aria-label="Abrir link do fornecedor"><ExternalLink className="h-4 w-4" /></a>}</div></label>
@@ -118,11 +124,11 @@ export function ProductForm({ product, categories, collections }: { product: Pro
         <section className="glass bevel p-5">
           <div className="mb-3 flex items-end justify-between">
             <h2 className="display text-2xl">Grade — tamanhos e cores</h2>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRows([...rows, { ...(rows.at(-1) ?? { color: "Preto", color_hex: "#0b0b0c" }), id: undefined, size: "", sku: "", stock: 0 } as Row])}><Plus className="h-4 w-4" /> Variação</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRows([...rows, { ...(rows.at(-1) ?? { color: "Preto", color_hex: "#0b0b0c" }), id: undefined, size: "", sku: "", stock: 0, supplier_sku: "" } as Row])}><Plus className="h-4 w-4" /> Variação</button>
           </div>
           <div className="scroll-x">
             <table className="table">
-              <thead><tr><th>Tamanho</th><th>Cor</th><th>Tom</th><th>SKU</th><th>Estoque</th><th /></tr></thead>
+              <thead><tr><th>Tamanho</th><th>Cor</th><th>Tom</th><th>SKU</th>{onDemand && <th>Cód. fornecedor</th>}<th>Estoque</th><th /></tr></thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={r.id ?? `n${i}`}>
@@ -130,6 +136,7 @@ export function ProductForm({ product, categories, collections }: { product: Pro
                     <td><input value={r.color} onChange={(e) => patch(i, { color: e.target.value })} aria-label="Cor" className="input h-9 w-28" /></td>
                     <td><input type="color" value={r.color_hex} onChange={(e) => patch(i, { color_hex: e.target.value })} aria-label="Tom da cor" className="h-9 w-10 cursor-pointer border border-ink bg-transparent p-0.5" /></td>
                     <td><input value={r.sku} onChange={(e) => patch(i, { sku: e.target.value })} aria-label="SKU" className="input h-9 w-40 font-mono text-xs" /></td>
+                    {onDemand && <td><input value={r.supplier_sku} onChange={(e) => patch(i, { supplier_sku: e.target.value })} aria-label="Código no fornecedor" placeholder="cód. deste tamanho/cor" className="input h-9 w-40 font-mono text-xs" /></td>}
                     <td>{onDemand
                       ? <span className="text-xs text-ink/55" title="Esta peça vende sem estoque">Não controla</span>
                       : r.id

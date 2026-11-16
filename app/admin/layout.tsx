@@ -23,13 +23,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     );
   }
   const settings = await getSettings();
-  const [pending, low, reviews] = await Promise.all([
+  const [pending, low, reviews, toOrder] = await Promise.all([
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("product_variants").select("id, products!inner(fulfillment)", { count: "exact", head: true }).eq("products.fulfillment", "stock").lte("stock", settings.low_stock_threshold),
     supabase.from("reviews").select("id", { count: "exact", head: true }).eq("approved", false),
+    supabase.from("supplier_orders").select("id", { count: "exact", head: true }).eq("status", "to_order"),
   ]);
   return (
-    <AdminShell user={{ name: profile.full_name || user.email || "Equipe", role: profile.role }} alerts={{ pending: pending.count ?? 0, lowStock: low.count ?? 0, reviews: reviews.count ?? 0 }}>
+    <AdminShell user={{ name: profile.full_name || user.email || "Equipe", role: profile.role }} alerts={{ pending: pending.count ?? 0, lowStock: low.count ?? 0, reviews: reviews.count ?? 0, toOrder: toOrder.count ?? 0 }}>
       {children}
     </AdminShell>
   );

@@ -12,6 +12,10 @@ export const FULFILLMENT: Record<Fulfillment, { label: string; hint: string }> =
 /** Quantidade máxima por item quando a peça vende sem estoque (mesmo limite do checkout). */
 export const ON_DEMAND_MAX = 20;
 
+export const SUPPLIER_STATUS: Record<"to_order" | "ordered" | "shipped" | "delivered" | "cancelled", string> = {
+  to_order: "A pedir", ordered: "Pedido feito", shipped: "Postado", delivered: "Entregue", cancelled: "Cancelado",
+};
+
 export const sellsWithoutStock = (p: Pick<Product, "fulfillment">) => (p.fulfillment ?? "stock") !== "stock";
 
 /** Quanto dá para vender de uma variação: o estoque, ou o limite do pedido se a peça vende sem estoque. */

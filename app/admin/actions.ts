@@ -27,7 +27,7 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
   if (price === null || price < 0) return { error: "Informe um preço válido." };
   const cost = money(fd, "cost");
   if (cost !== null && cost < 0) return { error: "Informe um custo válido." };
-  let variants: { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number }[] = [];
+  let variants: { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number; supplier_sku?: string }[] = [];
   let images: string[] = [];
   try { variants = JSON.parse(str(fd, "variants") || "[]"); images = JSON.parse(str(fd, "images") || "[]"); } catch { return { error: "Variações inválidas." }; }
   if (!variants.length) return { error: "Cadastre ao menos uma variação (tamanho/cor)." };
@@ -62,8 +62,15 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
 
   // Fornecedor (dropshipping / sob encomenda): tabela só da equipe. Os campos só vêm no formulário quando a peça vende sem estoque;
   // ao voltar para estoque próprio os dados ficam guardados para uso futuro.
-  if (fd.has("supplier_name")) {
-    const supplier = { supplier_name: str(fd, "supplier_name"), supplier_url: supplierUrl, supplier_sku: str(fd, "supplier_sku"), notes: str(fd, "supplier_notes") };
+  if (fd.has("supplier_id")) {
+    const supplierId = str(fd, "supplier_id") || null;
+    let supplierName = "";
+    if (supplierId) {
+      const { data: s } = await supabase.from("suppliers").select("name").eq("id", supplierId).maybeSingle();
+      if (!s) return { error: "Fornecedor não encontrado. Cadastre-o em Fornecedores." };
+      supplierName = s.name;
+    }
+    const supplier = { supplier_id: supplierId, supplier_name: supplierName, supplier_url: supplierUrl, supplier_sku: str(fd, "supplier_sku"), notes: str(fd, "supplier_notes") };
     const supplierSaved = Object.values(supplier).some(Boolean)
       ? await supabase.from("product_suppliers").upsert({ product_id: productId, ...supplier, updated_at: new Date().toISOString() })
       : await supabase.from("product_suppliers").delete().eq("product_id", productId);
@@ -81,6 +88,12 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
       ? await supabase.from("product_variants").update(base).eq("id", v.id)
       : await supabase.from("product_variants").insert({ ...base, product_id: productId, stock: Math.max(0, Math.round(Number(v.stock) || 0)) }).select("id, stock").single();
     if (res.error) return fail(res.error.message);
+    // Código do fornecedor por tamanho/cor (só a equipe lê).
+    const variantId = v.id ?? (res.data as { id: string } | null)?.id;
+    if (fd.has("supplier_id") && variantId && typeof v.supplier_sku === "string") {
+      const vs = await supabase.from("variant_suppliers").upsert({ variant_id: variantId, supplier_sku: v.supplier_sku.trim(), updated_at: new Date().toISOString() });
+      if (vs.error) return fail(vs.error.message);
+    }
     if (!v.id && res.data && res.data.stock > 0) {
       await supabase.from("inventory_movements").insert({ variant_id: res.data.id, delta: res.data.stock, reason: "restock", note: "Estoque inicial" });
     }
@@ -241,4 +254,62 @@ export async function setRole(_: ActionState, fd: FormData): Promise<ActionState
   if (!data?.length) return { error: "Somente a proprietária pode alterar a equipe." };
   revalidatePath("/admin/configuracoes");
   return null;
+}
+
+// ───────── Fornecedores ─────────
+
+export async function saveSupplier(_: ActionState, fd: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const id = str(fd, "id");
+  const name = str(fd, "name");
+  if (name.length < 2) return { error: "Dê um nome ao fornecedor." };
+  const website = str(fd, "website");
+  if (website && !/^https?:\/\//i.test(website)) return { error: "O site deve começar com http:// ou https://." };
+  const lead = Math.round(Number(str(fd, "lead_time_days") || 0));
+  if (!Number.isFinite(lead) || lead < 0 || lead > 120) return { error: "O prazo deve ficar entre 0 e 120 dias." };
+  const row = {
+    name, contact_name: str(fd, "contact_name"), email: str(fd, "email"), whatsapp: str(fd, "whatsapp"), website,
+    lead_time_days: lead, return_policy: str(fd, "return_policy"), notes: str(fd, "notes"), is_active: fd.get("is_active") !== "off",
+  };
+  const { error } = id
+    ? await supabase.from("suppliers").update(row).eq("id", id)
+    : await supabase.from("suppliers").insert(row);
+  if (error) return fail(error.message);
+  if (id) await supabase.from("product_suppliers").update({ supplier_name: name }).eq("supplier_id", id);
+  revalidatePath("/admin/fornecedores");
+  if (!id) redirect("/admin/fornecedores");
+  return { ok: "Fornecedor salvo." };
+}
+
+export async function deleteSupplier(_: ActionState, fd: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("suppliers").delete().eq("id", str(fd, "id"));
+  if (error) return fail(error.message);
+  revalidatePath("/admin/fornecedores");
+  redirect("/admin/fornecedores");
+}
+
+const SUPPLIER_FLOW = ["to_order", "ordered", "shipped", "delivered", "cancelled"];
+
+/** Avança um pedido ao fornecedor: registra nº do pedido no fornecedor, custo real, rastreio e datas. */
+export async function updateSupplierOrder(_: ActionState, fd: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const id = str(fd, "id");
+  const status = str(fd, "status");
+  if (!SUPPLIER_FLOW.includes(status)) return { error: "Status inválido." };
+  const cost = money(fd, "cost");
+  if (cost !== null && cost < 0) return { error: "Informe um custo válido." };
+  const { data: cur } = await supabase.from("supplier_orders").select("status, ordered_at, shipped_at, delivered_at").eq("id", id).maybeSingle();
+  if (!cur) return { error: "Pedido ao fornecedor não encontrado." };
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("supplier_orders").update({
+    status, cost, supplier_ref: str(fd, "supplier_ref"), tracking_code: str(fd, "tracking_code"), notes: str(fd, "notes"), updated_at: now,
+    ordered_at: cur.ordered_at ?? (["ordered", "shipped", "delivered"].includes(status) ? now : null),
+    shipped_at: cur.shipped_at ?? (["shipped", "delivered"].includes(status) ? now : null),
+    delivered_at: cur.delivered_at ?? (status === "delivered" ? now : null),
+  }).eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/admin/compras");
+  revalidatePath("/admin/pedidos", "layout");
+  return { ok: "Pedido ao fornecedor atualizado." };
 }

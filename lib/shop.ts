@@ -7,7 +7,7 @@ export const PRODUCT_SELECT =
   "*, categories(name, slug), collections(name, slug, season), product_variants(id, product_id, size, color, color_hex, sku, stock, price_override)";
 
 /** Só para o painel: inclui o custo, que o banco entrega apenas à equipe. */
-export const ADMIN_PRODUCT_SELECT = `${PRODUCT_SELECT}, product_costs(cost), product_suppliers(supplier_name, supplier_url, supplier_sku, notes)`;
+export const ADMIN_PRODUCT_SELECT = `${PRODUCT_SELECT}, product_costs(cost), product_suppliers(supplier_id, supplier_name, supplier_url, supplier_sku, notes), admin_variants:product_variants(id, variant_suppliers(supplier_sku, available))`;
 
 const DEFAULTS: Settings = {
   name: "ATELIER", tagline: "Moda & Acessórios", announcement: "", hero_title: "Nova coleção",

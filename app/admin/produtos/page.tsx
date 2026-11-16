@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FULFILLMENT } from "@/lib/fulfillment";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHead, Tabs } from "@/components/admin/bits";
@@ -45,7 +46,7 @@ export default async function Produtos({ searchParams }: { searchParams: Promise
                     <td>{p.collections?.name ?? "—"}</td>
                     <td className="tnum text-right">{brl(p.price)}</td>
                     <td className="tnum text-right">{margin !== null ? `${margin}%` : "—"}</td>
-                    <td className="tnum text-right font-bold">{stock === 0 ? <span className="badge badge-red">Esgotado</span> : stock}</td>
+                    <td className="tnum text-right font-bold">{p.fulfillment !== "stock" ? <span className="badge badge-stone" title={FULFILLMENT[p.fulfillment].hint}>{FULFILLMENT[p.fulfillment].label}</span> : stock === 0 ? <span className="badge badge-red">Esgotado</span> : stock}</td>
                     <td className="tnum">{p.product_variants?.length ?? 0}</td>
                     <td><span className={`badge ${p.status === "active" ? "badge-lime" : "badge-stone"}`}>{LABEL[p.status]}</span>{p.is_featured && <span className="badge badge-ink ml-1">Destaque</span>}</td>
                   </tr>

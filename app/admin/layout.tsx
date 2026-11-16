@@ -25,7 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const settings = await getSettings();
   const [pending, low, reviews] = await Promise.all([
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("product_variants").select("id", { count: "exact", head: true }).lte("stock", settings.low_stock_threshold),
+    supabase.from("product_variants").select("id, products!inner(fulfillment)", { count: "exact", head: true }).eq("products.fulfillment", "stock").lte("stock", settings.low_stock_threshold),
     supabase.from("reviews").select("id", { count: "exact", head: true }).eq("approved", false),
   ]);
   return (

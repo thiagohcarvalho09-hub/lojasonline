@@ -1,8 +1,9 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Check, Ruler, ShieldCheck, Truck } from "lucide-react";
+import { Check, Clock, Ruler, ShieldCheck, Truck } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { brl } from "@/lib/format";
+import { leadTimeText, sellable, sellsWithoutStock } from "@/lib/fulfillment";
 import { ProductArt } from "@/components/art";
 import { QtyStepper, useCart } from "./cart";
 import { WishButton } from "./wish-button";
@@ -11,7 +12,8 @@ export function ProductView({ product: p, freeOver }: { product: Product; freeOv
   const variants = useMemo(() => p.product_variants ?? [], [p.product_variants]);
   const colors = useMemo(() => [...new Map(variants.map((v) => [v.color, v.color_hex])).entries()], [variants]);
   const sizes = useMemo(() => [...new Set(variants.map((v) => v.size))], [variants]);
-  const firstAvailable = variants.find((v) => v.stock > 0) ?? variants[0];
+  const onDemand = sellsWithoutStock(p);
+  const firstAvailable = variants.find((v) => sellable(p, v.stock) > 0) ?? variants[0];
   const [color, setColor] = useState(firstAvailable?.color ?? "");
   const [size, setSize] = useState(sizes.length === 1 ? sizes[0] : "");
   const [qty, setQty] = useState(1);
@@ -22,7 +24,9 @@ export function ProductView({ product: p, freeOver }: { product: Product; freeOv
   const variant = variants.find((v) => v.color === color && v.size === size);
   const price = Number(variant?.price_override ?? p.price);
   const hex = colors.find(([c]) => c === color)?.[1] ?? "#0b0b0c";
-  const stockFor = (s: string) => variants.find((v) => v.color === color && v.size === s)?.stock ?? 0;
+  const stockFor = (s: string) => sellable(p, variants.find((v) => v.color === color && v.size === s)?.stock ?? 0);
+  const canBuy = variant ? sellable(p, variant.stock) : 0;
+  const lead = leadTimeText(p);
   const off = p.compare_at_price && p.compare_at_price > price ? Math.round((1 - price / p.compare_at_price) * 100) : 0;
   const shots = p.images.length ? p.images : ["art", "art-detail"];
 
@@ -91,25 +95,26 @@ export function ProductView({ product: p, freeOver }: { product: Product; freeOv
               );
             })}
           </div>
-          {variant && variant.stock > 0 && variant.stock <= 3 && <p className="mt-2 text-sm font-bold text-rouge">Restam apenas {variant.stock} nesta combinação.</p>}
+          {!onDemand && variant && variant.stock > 0 && variant.stock <= 3 && <p className="mt-2 text-sm font-bold text-rouge">Restam apenas {variant.stock} nesta combinação.</p>}
         </fieldset>
 
         <div className="mt-8 flex gap-3">
-          <QtyStepper value={qty} max={Math.max(1, variant?.stock ?? 1)} onChange={(n) => setQty(Math.max(1, n))} />
+          <QtyStepper value={qty} max={Math.max(1, canBuy || 1)} onChange={(n) => setQty(Math.max(1, n))} />
           <button
-            className="btn btn-blue flex-1" disabled={!variant || variant.stock === 0}
+            className="btn btn-blue flex-1" disabled={!variant || canBuy === 0}
             onClick={() => {
               if (!variant) return;
-              add({ variantId: variant.id, productId: p.id, slug: p.slug, name: p.name, label: [variant.size, variant.color].filter(Boolean).join(" · "), price, qty, max: variant.stock, art: p.art, tone: p.tone, image: p.images[0] ?? null });
+              add({ variantId: variant.id, productId: p.id, slug: p.slug, name: p.name, label: [variant.size, variant.color].filter(Boolean).join(" · "), price, qty, max: canBuy, art: p.art, tone: p.tone, image: p.images[0] ?? null });
               setAdded(true);
             }}
           >
-            {added ? <><Check className="h-4 w-4" /> Adicionado</> : !size ? "Escolha o tamanho" : variant?.stock === 0 ? "Esgotado" : "Adicionar à sacola"}
+            {added ? <><Check className="h-4 w-4" /> Adicionado</> : !size ? "Escolha o tamanho" : variant && canBuy === 0 ? "Esgotado" : "Adicionar à sacola"}
           </button>
         </div>
         <div className="mt-3"><WishButton productId={p.id} label /></div>
 
         <ul className="glass-thin mt-6 space-y-2 p-4 text-sm">
+          {lead && <li className="flex items-center gap-2 font-bold"><Clock className="h-4 w-4" strokeWidth={1.5} /> {lead}</li>}
           <li className="flex items-center gap-2"><Truck className="h-4 w-4" strokeWidth={1.5} /> Frete grátis acima de {brl(freeOver)}</li>
           <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" strokeWidth={1.5} /> Primeira troca gratuita em até 30 dias</li>
         </ul>

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { FULFILLMENT, type Fulfillment } from "@/lib/fulfillment";
+import type { ProductSupplier } from "@/lib/types";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { ProductImage } from "@/components/art";
@@ -22,7 +24,7 @@ export default async function Pedido({ params }: { params: Promise<{ id: string 
   const { id } = await params;
   const supabase = await createClient();
   const { data: o } = await supabase.from("orders")
-    .select("*, customers(id, name, email, phone, cpf), order_items(*, products(art, tone, images)), order_events(*)")
+    .select("*, customers(id, name, email, phone, cpf), order_items(*, products(art, tone, images, product_suppliers(supplier_name, supplier_url, supplier_sku, notes))), order_events(*)")
     .eq("id", id).maybeSingle();
   if (!o) notFound();
   const c = o.customers as { id: string; name: string; email: string; phone: string; cpf: string } | null;
@@ -49,10 +51,11 @@ export default async function Pedido({ params }: { params: Promise<{ id: string 
             <table className="table">
               <thead><tr><th colSpan={2}>Peça</th><th>Qtd</th><th className="text-right">Unitário</th><th className="text-right">Total</th></tr></thead>
               <tbody>
-                {(o.order_items as { id: string; name: string; variant_label: string; quantity: number; unit_price: number; total: number; products: { art: string; tone: string; images: string[] } | null }[]).map((i) => (
+                {(o.order_items as { id: string; name: string; variant_label: string; quantity: number; unit_price: number; total: number; fulfillment: Fulfillment; products: { art: string; tone: string; images: string[]; product_suppliers: ProductSupplier | null } | null }[]).map((i) => (
                   <tr key={i.id}>
                     <td className="w-14"><div className="h-16 w-13 overflow-hidden bg-stone">{i.products && <ProductImage product={i.products} className="h-full w-full" />}</div></td>
-                    <td><p className="font-bold">{i.name}</p><p className="text-sm text-ink/60">{i.variant_label}</p></td>
+                    <td><p className="font-bold">{i.name}</p><p className="text-sm text-ink/60">{i.variant_label}</p>
+                      {i.fulfillment !== "stock" && <SupplierNote mode={i.fulfillment} supplier={i.products?.product_suppliers ?? null} />}</td>
                     <td className="tnum">{i.quantity}</td>
                     <td className="tnum text-right">{brl(i.unit_price)}</td>
                     <td className="tnum text-right font-bold">{brl(i.total)}</td>
@@ -119,5 +122,22 @@ export default async function Pedido({ params }: { params: Promise<{ id: string 
         </div>
       </div>
     </>
+  );
+}
+
+/** Itens de dropshipping / sob encomenda: lembra a equipe de pedir ao fornecedor, com o link e o código. */
+function SupplierNote({ mode, supplier }: { mode: Fulfillment; supplier: ProductSupplier | null }) {
+  return (
+    <div className="mt-1.5 text-xs">
+      <span className="badge badge-stone">{FULFILLMENT[mode].label}</span>
+      {supplier && (supplier.supplier_name || supplier.supplier_url || supplier.supplier_sku) ? (
+        <p className="mt-1 text-ink/70">
+          Pedir a {supplier.supplier_name || "fornecedor"}
+          {supplier.supplier_sku && <> · cód. <span className="font-mono">{supplier.supplier_sku}</span></>}
+          {/^https?:\/\//.test(supplier.supplier_url) && <> · <a href={supplier.supplier_url} target="_blank" rel="noreferrer" className="underline">abrir no fornecedor</a></>}
+          {supplier.notes && <span className="block text-ink/55">{supplier.notes}</span>}
+        </p>
+      ) : <p className="mt-1 text-ink/55">{mode === "dropship" ? "Sem fornecedor cadastrado na peça." : "Produzir ou comprar e enviar no prazo."}</p>}
+    </div>
   );
 }

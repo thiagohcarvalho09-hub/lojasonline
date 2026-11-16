@@ -7,13 +7,18 @@ export type Product = {
   compare_at_price: number | null; sku: string | null; images: string[];
   art: string; tone: string; material: string; care: string; tags: string[]; status: string;
   is_featured: boolean; wish_count: number; created_at: string;
+  /** Modelo de venda: estoque próprio, dropshipping ou sob encomenda. */
+  fulfillment: "stock" | "dropship" | "preorder"; lead_time_days: number;
   category_id: string | null; collection_id: string | null;
   categories?: { name: string; slug: string } | null;
   collections?: { name: string; slug: string; season: string } | null;
   product_variants?: Variant[];
   /** Custo da peça: tabela restrita à equipe, só vem nas consultas do painel. */
   product_costs?: { cost: number } | null;
+  /** Fornecedor (dropshipping/encomenda): tabela restrita à equipe, só vem nas consultas do painel. */
+  product_suppliers?: ProductSupplier | null;
 };
+export type ProductSupplier = { supplier_name: string; supplier_url: string; supplier_sku: string; notes: string };
 export type Collection = {
   id: string; name: string; slug: string; description: string; season: string;
   image_url: string | null; tone: string; is_active: boolean; is_featured: boolean; position: number;

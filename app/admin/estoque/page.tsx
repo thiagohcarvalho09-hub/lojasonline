@@ -17,7 +17,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
   const supabase = await createClient();
   const settings = await getSettings();
   const [{ data }, { data: moves }] = await Promise.all([
-    supabase.from("product_variants").select("id, size, color, color_hex, sku, stock, products!inner(id, name, art, tone, images, price, product_costs(cost))").order("stock"),
+    supabase.from("product_variants").select("id, size, color, color_hex, sku, stock, products!inner(id, name, art, tone, images, price, fulfillment, product_costs(cost))").eq("products.fulfillment", "stock").order("stock"),
     supabase.from("inventory_movements").select("id, delta, reason, note, created_at, product_variants(size, color, products(name))").order("created_at", { ascending: false }).limit(14),
   ]);
   const all = (data ?? []) as unknown as Row[];

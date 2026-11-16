@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { sellable, sellsWithoutStock } from "./fulfillment";
 import { createClient } from "@/lib/supabase/server";
 import type { Collection, Product, Settings } from "@/lib/types";
 
@@ -6,7 +7,7 @@ export const PRODUCT_SELECT =
   "*, categories(name, slug), collections(name, slug, season), product_variants(id, product_id, size, color, color_hex, sku, stock, price_override)";
 
 /** Só para o painel: inclui o custo, que o banco entrega apenas à equipe. */
-export const ADMIN_PRODUCT_SELECT = `${PRODUCT_SELECT}, product_costs(cost)`;
+export const ADMIN_PRODUCT_SELECT = `${PRODUCT_SELECT}, product_costs(cost), product_suppliers(supplier_name, supplier_url, supplier_sku, notes)`;
 
 const DEFAULTS: Settings = {
   name: "ATELIER", tagline: "Moda & Acessórios", announcement: "", hero_title: "Nova coleção",
@@ -52,9 +53,11 @@ export async function getCatalog(f: CatalogFilters = {}, limit = 60): Promise<Pr
   else query = query.order("created_at", { ascending: false });
   const { data } = await query;
   let list = (data ?? []) as unknown as Product[];
-  if (f.tamanho) list = list.filter((p) => p.product_variants?.some((v) => v.size === f.tamanho && v.stock > 0));
+  if (f.tamanho) list = list.filter((p) => p.product_variants?.some((v) => v.size === f.tamanho && sellable(p, v.stock) > 0));
   return list;
 }
 
 export const stockOf = (p: Product) => (p.product_variants ?? []).reduce((a, v) => a + v.stock, 0);
+/** Peça à venda agora: tem estoque, ou vende sem estoque (dropshipping / sob encomenda). */
+export const availableOf = (p: Product) => sellsWithoutStock(p) || stockOf(p) > 0;
 export const isNew = (p: Product) => Date.now() - new Date(p.created_at).getTime() < 14 * 864e5;

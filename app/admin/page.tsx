@@ -23,7 +23,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
   const [{ data: stats }, { data: recent }, { count: lowCount }, { data: featured }] = await Promise.all([
     supabase.rpc("dashboard_stats", { p_from: range.from, p_to: range.to }),
     supabase.from("orders").select("id, number, status, total, customers(name), order_items(name)").order("created_at", { ascending: false }).limit(6),
-    supabase.from("product_variants").select("id", { count: "exact", head: true }).lte("stock", settings.low_stock_threshold),
+    supabase.from("product_variants").select("id, products!inner(fulfillment)", { count: "exact", head: true }).eq("products.fulfillment", "stock").lte("stock", settings.low_stock_threshold),
     supabase.from("products").select("slug, name, art, tone, images").eq("status", "active").order("wish_count", { ascending: false }).limit(2),
   ]);
   const s = (stats ?? { revenue: 0, orders: 0, prev_revenue: 0, prev_orders: 0, buyers: 0, recurring: 0, units: 0, pending: 0, to_ship: 0, channels: [], daily: [], top_products: [] }) as Stats;

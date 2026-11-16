@@ -31,6 +31,13 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
   let images: string[] = [];
   try { variants = JSON.parse(str(fd, "variants") || "[]"); images = JSON.parse(str(fd, "images") || "[]"); } catch { return { error: "Variações inválidas." }; }
   if (!variants.length) return { error: "Cadastre ao menos uma variação (tamanho/cor)." };
+  const fulfillment = str(fd, "fulfillment") || "stock";
+  if (!["stock", "dropship", "preorder"].includes(fulfillment)) return { error: "Modelo de venda inválido." };
+  const leadTime = Math.round(Number(str(fd, "lead_time_days") || 0));
+  if (!Number.isFinite(leadTime) || leadTime < 0 || leadTime > 120) return { error: "O prazo extra deve ficar entre 0 e 120 dias." };
+  const supplierUrl = str(fd, "supplier_url");
+  if (supplierUrl && !/^https?:\/\//i.test(supplierUrl)) return { error: "O link do fornecedor deve começar com http:// ou https://." };
+  if (images.some((src) => typeof src !== "string" || !/^https:\/\//i.test(src))) return { error: "As fotos precisam ser links https://." };
 
   const row = {
     name, slug: slugify(str(fd, "slug") || name), description: str(fd, "description"), price,
@@ -39,6 +46,7 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
     art: str(fd, "art") || "blazer", tone: str(fd, "tone") || "#cfcac0", material: str(fd, "material"), care: str(fd, "care"),
     status: str(fd, "status") || "active", is_featured: fd.get("is_featured") === "on", images,
     tags: str(fd, "tags").split(",").map((t) => t.trim()).filter(Boolean),
+    fulfillment, lead_time_days: leadTime,
   };
   const saved = id
     ? await supabase.from("products").update(row).eq("id", id).select("id").single()
@@ -51,6 +59,16 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
     ? await supabase.from("product_costs").delete().eq("product_id", productId)
     : await supabase.from("product_costs").upsert({ product_id: productId, cost, updated_at: new Date().toISOString() });
   if (costSaved.error) return fail(costSaved.error.message);
+
+  // Fornecedor (dropshipping / sob encomenda): tabela só da equipe. Os campos só vêm no formulário quando a peça vende sem estoque;
+  // ao voltar para estoque próprio os dados ficam guardados para uso futuro.
+  if (fd.has("supplier_name")) {
+    const supplier = { supplier_name: str(fd, "supplier_name"), supplier_url: supplierUrl, supplier_sku: str(fd, "supplier_sku"), notes: str(fd, "supplier_notes") };
+    const supplierSaved = Object.values(supplier).some(Boolean)
+      ? await supabase.from("product_suppliers").upsert({ product_id: productId, ...supplier, updated_at: new Date().toISOString() })
+      : await supabase.from("product_suppliers").delete().eq("product_id", productId);
+    if (supplierSaved.error) return fail(supplierSaved.error.message);
+  }
 
   // Variações: o estoque de variações existentes só muda pela tela de Estoque (com histórico).
   const { data: current } = await supabase.from("product_variants").select("id").eq("product_id", productId);

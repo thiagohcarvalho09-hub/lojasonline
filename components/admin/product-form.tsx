@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { ImagePlus, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, ImagePlus, Link2, Plus, Trash2 } from "lucide-react";
 import type { Product } from "@/lib/types";
+import { FULFILLMENT, type Fulfillment } from "@/lib/fulfillment";
 import { ART_KEYS, ProductArt } from "@/components/art";
 import { CareLabel } from "@/components/ui";
 import { ActionForm, Submit } from "./action-form";
@@ -27,6 +28,18 @@ export function ProductForm({ product, categories, collections }: { product: Pro
   const [care, setCare] = useState(product?.care ?? "");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [mode, setMode] = useState<Fulfillment>(product?.fulfillment ?? "stock");
+  const [supplierUrl, setSupplierUrl] = useState(product?.product_suppliers?.supplier_url ?? "");
+  const [imageUrl, setImageUrl] = useState("");
+  const onDemand = mode !== "stock";
+
+  function addImageUrl() {
+    const url = imageUrl.trim();
+    if (!/^https:\/\/\S+$/i.test(url)) { setUploadError("Cole um link de imagem que comece com https://"); return; }
+    setUploadError("");
+    if (!images.includes(url)) setImages([...images, url]);
+    setImageUrl("");
+  }
 
   const patch = (i: number, p: Partial<Row>) => setRows(rows.map((r, k) => (k === i ? { ...r, ...p } : r)));
 
@@ -76,6 +89,32 @@ export function ProductForm({ product, categories, collections }: { product: Pro
           <label className="field"><span>SKU base</span><input name="sku" defaultValue={product?.sku ?? ""} className="input font-mono text-sm" /></label>
         </section>
 
+        <section className="glass bevel grid gap-4 p-5 sm:grid-cols-2">
+          <h2 className="display text-2xl sm:col-span-2">Modelo de venda</h2>
+          <input type="hidden" name="fulfillment" value={mode} />
+          <div className="grid gap-2 sm:col-span-2 sm:grid-cols-3" role="radiogroup" aria-label="Modelo de venda">
+            {(Object.keys(FULFILLMENT) as Fulfillment[]).map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={mode === k} onClick={() => setMode(k)}
+                className={`border p-3 text-left transition-colors ${mode === k ? "border-ink bg-ink text-paper" : "border-ink/40 bg-white/40 hover:border-ink"}`}>
+                <span className="block font-bold">{FULFILLMENT[k].label}</span>
+                <span className={`mt-1 block text-xs ${mode === k ? "text-paper/70" : "text-ink/60"}`}>{FULFILLMENT[k].hint}</span>
+              </button>
+            ))}
+          </div>
+          <label className="field"><span>Prazo extra de envio (dias úteis)</span>
+            <input name="lead_time_days" type="number" min={0} max={120} defaultValue={product?.lead_time_days ?? (onDemand ? 7 : 0)} className="input tnum" /></label>
+          <p className="self-end pb-3 text-xs text-ink/55">Aparece na página da peça como “Envio em até N dias úteis”. Use 0 para não mostrar.</p>
+          {onDemand && <>
+            <h3 className="eyebrow sm:col-span-2">Fornecedor <span className="font-normal normal-case tracking-normal text-ink/55">— só a equipe vê</span></h3>
+            <label className="field"><span>Nome do fornecedor</span><input name="supplier_name" defaultValue={product?.product_suppliers?.supplier_name} className="input" /></label>
+            <label className="field"><span>Código da peça no fornecedor</span><input name="supplier_sku" defaultValue={product?.product_suppliers?.supplier_sku} className="input font-mono text-sm" /></label>
+            <label className="field sm:col-span-2"><span>Link da peça no fornecedor</span>
+              <div className="flex gap-2"><input name="supplier_url" type="url" value={supplierUrl} onChange={(e) => setSupplierUrl(e.target.value)} placeholder="https://" className="input flex-1" />
+                {/^https?:\/\//.test(supplierUrl) && <a href={supplierUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm self-center" aria-label="Abrir link do fornecedor"><ExternalLink className="h-4 w-4" /></a>}</div></label>
+            <label className="field sm:col-span-2"><span>Observações para o pedido ao fornecedor</span><textarea name="supplier_notes" rows={2} defaultValue={product?.product_suppliers?.notes} className="input" /></label>
+          </>}
+        </section>
+
         <section className="glass bevel p-5">
           <div className="mb-3 flex items-end justify-between">
             <h2 className="display text-2xl">Grade — tamanhos e cores</h2>
@@ -91,7 +130,9 @@ export function ProductForm({ product, categories, collections }: { product: Pro
                     <td><input value={r.color} onChange={(e) => patch(i, { color: e.target.value })} aria-label="Cor" className="input h-9 w-28" /></td>
                     <td><input type="color" value={r.color_hex} onChange={(e) => patch(i, { color_hex: e.target.value })} aria-label="Tom da cor" className="h-9 w-10 cursor-pointer border border-ink bg-transparent p-0.5" /></td>
                     <td><input value={r.sku} onChange={(e) => patch(i, { sku: e.target.value })} aria-label="SKU" className="input h-9 w-40 font-mono text-xs" /></td>
-                    <td>{r.id
+                    <td>{onDemand
+                      ? <span className="text-xs text-ink/55" title="Esta peça vende sem estoque">Não controla</span>
+                      : r.id
                       ? <span className="tnum font-bold" title="Ajuste pela tela de Estoque">{r.stock} un.</span>
                       : <input type="number" min={0} value={r.stock} onChange={(e) => patch(i, { stock: Number(e.target.value) })} aria-label="Estoque inicial" className="input h-9 w-20" />}</td>
                     <td><button type="button" onClick={() => setRows(rows.filter((_, k) => k !== i))} aria-label="Remover variação" disabled={rows.length === 1} className="disabled:opacity-30"><Trash2 className="h-4 w-4" /></button></td>
@@ -100,7 +141,7 @@ export function ProductForm({ product, categories, collections }: { product: Pro
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-xs text-ink/55">O estoque de variações já salvas é movimentado em <Link href="/admin/estoque" className="underline">Estoque</Link>, para manter o histórico de entradas e saídas.</p>
+          <p className="mt-2 text-xs text-ink/55">{onDemand ? "Peças em dropshipping ou sob encomenda vendem sem estoque: o estoque não é conferido nem baixado nas vendas. " : ""}O estoque de variações já salvas é movimentado em <Link href="/admin/estoque" className="underline">Estoque</Link>, para manter o histórico de entradas e saídas.</p>
         </section>
 
         <section className="glass bevel grid gap-4 p-5 sm:grid-cols-2">
@@ -130,6 +171,11 @@ export function ProductForm({ product, categories, collections }: { product: Pro
               <span><ImagePlus className="mx-auto mb-1 h-6 w-6" strokeWidth={1.3} />{uploading ? "Enviando…" : "Enviar fotos"}</span>
               <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => upload(e.target.files)} disabled={uploading} />
             </label>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addImageUrl(); } }}
+              placeholder="Ou cole o link de uma foto (ex.: do fornecedor)" aria-label="Link da foto" className="input h-10 flex-1 text-sm" />
+            <button type="button" onClick={addImageUrl} className="btn btn-ghost btn-sm"><Link2 className="h-4 w-4" /> Adicionar</button>
           </div>
           {uploadError && <p role="alert" className="mt-2 text-sm font-bold text-rouge">{uploadError}</p>}
           <p className="mt-2 text-xs text-ink/55">Lembre de salvar a peça depois de enviar. Sem fotos, a loja usa a ilustração de estúdio abaixo.</p>

@@ -9,7 +9,7 @@ import { WishButton } from "./wish-button";
 export function ProductCard({ product: p, index }: { product: Product; index?: number }) {
   const stock = stockOf(p);
   const soldOut = !availableOf(p);
-  const colors = [...new Map((p.product_variants ?? []).map((v) => [v.color, v.color_hex])).entries()];
+  const colors = [...new Map((p.product_variants ?? []).filter((v) => v.available !== false).map((v) => [v.color, v.color_hex])).entries()];
   const off = p.compare_at_price && p.compare_at_price > p.price ? Math.round((1 - p.price / p.compare_at_price) * 100) : 0;
   return (
     <article className="group relative">

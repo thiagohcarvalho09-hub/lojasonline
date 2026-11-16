@@ -9,11 +9,16 @@ import { QtyStepper, useCart } from "./cart";
 import { WishButton } from "./wish-button";
 
 export function ProductView({ product: p, freeOver }: { product: Product; freeOver: number }) {
-  const variants = useMemo(() => p.product_variants ?? [], [p.product_variants]);
+  // Variações indisponíveis (ex.: esgotadas no fornecedor) somem da vitrine; se todas estiverem, a peça aparece esgotada.
+  const variants = useMemo(() => {
+    const all = p.product_variants ?? [];
+    const open = all.filter((v) => v.available !== false);
+    return open.length ? open : all;
+  }, [p.product_variants]);
   const colors = useMemo(() => [...new Map(variants.map((v) => [v.color, v.color_hex])).entries()], [variants]);
   const sizes = useMemo(() => [...new Set(variants.map((v) => v.size))], [variants]);
   const onDemand = sellsWithoutStock(p);
-  const firstAvailable = variants.find((v) => sellable(p, v.stock) > 0) ?? variants[0];
+  const firstAvailable = variants.find((v) => sellable(p, v) > 0) ?? variants[0];
   const [color, setColor] = useState(firstAvailable?.color ?? "");
   const [size, setSize] = useState(sizes.length === 1 ? sizes[0] : "");
   const [qty, setQty] = useState(1);
@@ -24,8 +29,8 @@ export function ProductView({ product: p, freeOver }: { product: Product; freeOv
   const variant = variants.find((v) => v.color === color && v.size === size);
   const price = Number(variant?.price_override ?? p.price);
   const hex = colors.find(([c]) => c === color)?.[1] ?? "#0b0b0c";
-  const stockFor = (s: string) => sellable(p, variants.find((v) => v.color === color && v.size === s)?.stock ?? 0);
-  const canBuy = variant ? sellable(p, variant.stock) : 0;
+  const stockFor = (s: string) => { const v = variants.find((x) => x.color === color && x.size === s); return v ? sellable(p, v) : 0; };
+  const canBuy = variant ? sellable(p, variant) : 0;
   const lead = leadTimeText(p);
   const off = p.compare_at_price && p.compare_at_price > price ? Math.round((1 - price / p.compare_at_price) * 100) : 0;
   const shots = p.images.length ? p.images : ["art", "art-detail"];

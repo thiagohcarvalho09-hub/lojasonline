@@ -18,8 +18,9 @@ export const SUPPLIER_STATUS: Record<"to_order" | "ordered" | "shipped" | "deliv
 
 export const sellsWithoutStock = (p: Pick<Product, "fulfillment">) => (p.fulfillment ?? "stock") !== "stock";
 
-/** Quanto dá para vender de uma variação: o estoque, ou o limite do pedido se a peça vende sem estoque. */
-export const sellable = (p: Pick<Product, "fulfillment">, stock: number) => (sellsWithoutStock(p) ? ON_DEMAND_MAX : stock);
+/** Quanto dá para vender de uma variação: 0 se marcada indisponível; senão o estoque, ou o limite do pedido se a peça vende sem estoque. */
+export const sellable = (p: Pick<Product, "fulfillment">, v: { stock: number; available?: boolean }) =>
+  v.available === false ? 0 : sellsWithoutStock(p) ? ON_DEMAND_MAX : v.stock;
 
 /** Texto de prazo mostrado ao cliente; vazio para estoque próprio sem prazo extra. */
 export function leadTimeText(p: Pick<Product, "fulfillment" | "lead_time_days">) {

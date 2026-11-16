@@ -27,7 +27,7 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
   if (price === null || price < 0) return { error: "Informe um preço válido." };
   const cost = money(fd, "cost");
   if (cost !== null && cost < 0) return { error: "Informe um custo válido." };
-  let variants: { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number; supplier_sku?: string }[] = [];
+  let variants: { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number; supplier_sku?: string; available?: boolean }[] = [];
   let images: string[] = [];
   try { variants = JSON.parse(str(fd, "variants") || "[]"); images = JSON.parse(str(fd, "images") || "[]"); } catch { return { error: "Variações inválidas." }; }
   if (!variants.length) return { error: "Cadastre ao menos uma variação (tamanho/cor)." };
@@ -83,7 +83,7 @@ export async function saveProduct(_: ActionState, fd: FormData): Promise<ActionS
   const gone = (current ?? []).filter((v) => !keep.has(v.id)).map((v) => v.id);
   if (gone.length) await supabase.from("product_variants").delete().in("id", gone);
   for (const v of variants) {
-    const base = { size: v.size || "Único", color: v.color || "Preto", color_hex: v.color_hex || "#0b0b0c", sku: v.sku || null };
+    const base = { size: v.size || "Único", color: v.color || "Preto", color_hex: v.color_hex || "#0b0b0c", sku: v.sku || null, available: v.available !== false };
     const res = v.id
       ? await supabase.from("product_variants").update(base).eq("id", v.id)
       : await supabase.from("product_variants").insert({ ...base, product_id: productId, stock: Math.max(0, Math.round(Number(v.stock) || 0)) }).select("id, stock").single();
@@ -312,4 +312,14 @@ export async function updateSupplierOrder(_: ActionState, fd: FormData): Promise
   revalidatePath("/admin/compras");
   revalidatePath("/admin/pedidos", "layout");
   return { ok: "Pedido ao fornecedor atualizado." };
+}
+
+/** Liga/desliga uma variação na vitrine (ex.: o fornecedor avisou que o tamanho esgotou). */
+export async function setVariantAvailable(_: ActionState, fd: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const available = str(fd, "available") === "true";
+  const { error } = await supabase.from("product_variants").update({ available }).eq("id", str(fd, "variant_id"));
+  if (error) return fail(error.message);
+  revalidatePath("/", "layout");
+  return { ok: available ? "Variação voltou para a vitrine." : "Variação marcada como esgotada no fornecedor: saiu da vitrine." };
 }

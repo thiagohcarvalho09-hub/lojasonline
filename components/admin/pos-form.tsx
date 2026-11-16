@@ -29,7 +29,7 @@ export function PosForm({ products }: { products: Product[] }) {
   const add = (product: Product, variant: Variant) => setLines((cur) => {
     const i = cur.findIndex((l) => l.variant.id === variant.id);
     if (i < 0) return [...cur, { product, variant, qty: 1 }];
-    return cur.map((l, k) => (k === i ? { ...l, qty: Math.min(l.qty + 1, sellable(product, variant.stock)) } : l));
+    return cur.map((l, k) => (k === i ? { ...l, qty: Math.min(l.qty + 1, sellable(product, variant)) } : l));
   });
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -67,7 +67,7 @@ export function PosForm({ products }: { products: Product[] }) {
                 <p className="tnum text-sm">{brl(p.price)}</p>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {(p.product_variants ?? []).map((v) => (
-                    <button key={v.id} type="button" disabled={sellable(p, v.stock) === 0} onClick={() => add(p, v)} title={`${v.color} · ${p.fulfillment === "stock" ? `${v.stock} em estoque` : "vende sem estoque"}`}
+                    <button key={v.id} type="button" disabled={sellable(p, v) === 0} onClick={() => add(p, v)} title={`${v.color} · ${v.available === false ? "indisponível" : p.fulfillment === "stock" ? `${v.stock} em estoque` : "vende sem estoque"}`}
                       className="flex h-7 items-center gap-1.5 border border-ink/60 bg-white/50 px-1.5 text-xs hover:bg-ink hover:text-paper disabled:opacity-30 disabled:line-through">
                       <span className="h-2.5 w-2.5 rounded-full ring-1 ring-ink/30" style={{ background: v.color_hex }} />{v.size}
                     </button>
@@ -86,8 +86,8 @@ export function PosForm({ products }: { products: Product[] }) {
           {lines.map((l) => (
             <li key={l.variant.id} className="stitch-b flex items-center gap-3 py-2 text-sm">
               <div className="min-w-0 flex-1"><p className="truncate font-bold">{l.product.name}</p><p className="text-ink/60">{l.variant.size} · {l.variant.color}</p></div>
-              <input type="number" min={1} max={sellable(l.product, l.variant.stock)} value={l.qty} aria-label="Quantidade" className="input h-9 w-16 px-2 text-center"
-                onChange={(e) => setLines(lines.map((x) => (x === l ? { ...x, qty: Math.max(1, Math.min(Number(e.target.value) || 1, sellable(l.product, l.variant.stock))) } : x)))} />
+              <input type="number" min={1} max={sellable(l.product, l.variant)} value={l.qty} aria-label="Quantidade" className="input h-9 w-16 px-2 text-center"
+                onChange={(e) => setLines(lines.map((x) => (x === l ? { ...x, qty: Math.max(1, Math.min(Number(e.target.value) || 1, sellable(l.product, l.variant))) } : x)))} />
               <span className="tnum w-24 text-right font-bold">{brl(l.qty * Number(l.variant.price_override ?? l.product.price))}</span>
               <button type="button" onClick={() => setLines(lines.filter((x) => x !== l))} aria-label="Remover"><Trash2 className="h-4 w-4" /></button>
             </li>

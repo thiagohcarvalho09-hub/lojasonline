@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { brl, dateShort, STATUS } from "@/lib/format";
 import { SUPPLIER_STATUS } from "@/lib/fulfillment";
 import type { SupplierOrderStatus } from "@/lib/types";
-import { updateSupplierOrder } from "../actions";
+import { setVariantAvailable, updateSupplierOrder } from "../actions";
 
 export const metadata: Metadata = { title: "Pedidos ao fornecedor" };
 
@@ -18,7 +18,7 @@ type Row = {
   suppliers: { whatsapp: string; email: string; website: string; lead_time_days: number } | null;
   orders: { id: string; number: number; status: string; shipping_address: Address | null; customers: { name: string; phone: string; email: string } | null } | null;
   supplier_order_items: { name: string; variant_label: string; quantity: number; supplier_sku: string;
-    order_items: { products: { product_suppliers: { supplier_url: string } | null } | null } | null }[];
+    order_items: { variant_id: string | null; product_variants: { available: boolean } | null; products: { product_suppliers: { supplier_url: string } | null } | null } | null }[];
 };
 
 const TABS: SupplierOrderStatus[] = ["to_order", "ordered", "shipped", "delivered", "cancelled"];
@@ -45,7 +45,7 @@ export default async function Compras({ searchParams }: { searchParams: Promise<
   const supabase = await createClient();
   const [{ data }, { data: all }] = await Promise.all([
     supabase.from("supplier_orders")
-      .select("*, suppliers(whatsapp, email, website, lead_time_days), orders(id, number, status, shipping_address, customers(name, phone, email)), supplier_order_items(name, variant_label, quantity, supplier_sku, order_items(products(product_suppliers(supplier_url))))")
+      .select("*, suppliers(whatsapp, email, website, lead_time_days), orders(id, number, status, shipping_address, customers(name, phone, email)), supplier_order_items(name, variant_label, quantity, supplier_sku, order_items(variant_id, product_variants(available), products(product_suppliers(supplier_url))))")
       .eq("status", current).order("created_at", { ascending: current !== "delivered" && current !== "cancelled" }).limit(100),
     supabase.from("supplier_orders").select("status"),
   ]);
@@ -86,7 +86,16 @@ export default async function Compras({ searchParams }: { searchParams: Promise<
                 {r.supplier_order_items.map((i, k) => (
                   <li key={k} className="flex justify-between gap-3 border-b border-ink/10 pb-1">
                     <span><b>{i.quantity}×</b> {i.name} <span className="text-ink/60">{i.variant_label}</span></span>
-                    <span className="font-mono text-xs">{i.supplier_sku || <span className="text-rouge">sem código</span>}</span>
+                    <span className="flex items-center gap-3">
+                      <span className="font-mono text-xs">{i.supplier_sku || <span className="text-rouge">sem código</span>}</span>
+                      {i.order_items?.variant_id && (
+                        <ActionForm action={setVariantAvailable}>
+                          <input type="hidden" name="variant_id" value={i.order_items.variant_id} />
+                          <input type="hidden" name="available" value={String(i.order_items.product_variants?.available === false)} />
+                          <Submit className="text-xs underline">{i.order_items.product_variants?.available === false ? "Voltar à vitrine" : "Esgotou no fornecedor"}</Submit>
+                        </ActionForm>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>

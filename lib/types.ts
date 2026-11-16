@@ -1,6 +1,8 @@
 export type Variant = {
   id: string; product_id: string; size: string; color: string; color_hex: string;
   sku: string | null; stock: number; price_override: number | null;
+  /** Disponível para venda (ex.: o fornecedor ainda tem este tamanho). Indisponível some da vitrine. */
+  available: boolean;
 };
 export type Product = {
   id: string; name: string; slug: string; description: string; price: number;
@@ -21,8 +23,8 @@ export type Product = {
   admin_variants?: { id: string; variant_suppliers: VariantSupplier | null }[];
 };
 export type ProductSupplier = { supplier_id: string | null; supplier_name: string; supplier_url: string; supplier_sku: string; notes: string };
-/** Código do fornecedor por tamanho/cor (e disponibilidade no fornecedor). Só a equipe lê. */
-export type VariantSupplier = { supplier_sku: string; available: boolean };
+/** Código do fornecedor por tamanho/cor. Só a equipe lê. */
+export type VariantSupplier = { supplier_sku: string };
 export type Supplier = {
   id: string; name: string; contact_name: string; email: string; whatsapp: string; website: string;
   lead_time_days: number; return_policy: string; notes: string; is_active: boolean; created_at: string;

@@ -10,7 +10,7 @@ import { ActionForm, Submit } from "./action-form";
 import { deleteProduct, saveProduct } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/client";
 
-type Row = { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number; supplier_sku: string };
+type Row = { id?: string; size: string; color: string; color_hex: string; sku: string; stock: number; supplier_sku: string; available: boolean };
 type Opt = { id: string; name: string };
 
 const TONES = ["#cfcac0", "#c9c5bd", "#c3c7cb", "#d6d0c4", "#bdb8b3", "#dcd8cf", "#2a2a2d"];
@@ -19,8 +19,8 @@ const money = (n: number | null | undefined) => (n == null ? "" : Number(n).toFi
 export function ProductForm({ product, categories, collections, suppliers }: { product: Product | null; categories: Opt[]; collections: Opt[]; suppliers: Opt[] }) {
   const supplierSku = new Map((product?.admin_variants ?? []).map((v) => [v.id, v.variant_suppliers?.supplier_sku ?? ""]));
   const [rows, setRows] = useState<Row[]>(
-    product?.product_variants?.map((v) => ({ id: v.id, size: v.size, color: v.color, color_hex: v.color_hex, sku: v.sku ?? "", stock: v.stock, supplier_sku: supplierSku.get(v.id) ?? "" }))
-      ?? [{ size: "Único", color: "Preto", color_hex: "#0b0b0c", sku: "", stock: 0, supplier_sku: "" }],
+    product?.product_variants?.map((v) => ({ id: v.id, size: v.size, color: v.color, color_hex: v.color_hex, sku: v.sku ?? "", stock: v.stock, supplier_sku: supplierSku.get(v.id) ?? "", available: v.available !== false }))
+      ?? [{ size: "Único", color: "Preto", color_hex: "#0b0b0c", sku: "", stock: 0, supplier_sku: "", available: true }],
   );
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [art, setArt] = useState(product?.art ?? "blazer");
@@ -124,11 +124,11 @@ export function ProductForm({ product, categories, collections, suppliers }: { p
         <section className="glass bevel p-5">
           <div className="mb-3 flex items-end justify-between">
             <h2 className="display text-2xl">Grade — tamanhos e cores</h2>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRows([...rows, { ...(rows.at(-1) ?? { color: "Preto", color_hex: "#0b0b0c" }), id: undefined, size: "", sku: "", stock: 0, supplier_sku: "" } as Row])}><Plus className="h-4 w-4" /> Variação</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRows([...rows, { ...(rows.at(-1) ?? { color: "Preto", color_hex: "#0b0b0c" }), id: undefined, size: "", sku: "", stock: 0, supplier_sku: "", available: true } as Row])}><Plus className="h-4 w-4" /> Variação</button>
           </div>
           <div className="scroll-x">
             <table className="table">
-              <thead><tr><th>Tamanho</th><th>Cor</th><th>Tom</th><th>SKU</th>{onDemand && <th>Cód. fornecedor</th>}<th>Estoque</th><th /></tr></thead>
+              <thead><tr><th>Tamanho</th><th>Cor</th><th>Tom</th><th>SKU</th>{onDemand && <th>Cód. fornecedor</th>}<th>Estoque</th><th title="Desmarque quando o tamanho/cor acabar (ex.: esgotou no fornecedor). Some da vitrine e o checkout recusa.">Disponível</th><th /></tr></thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={r.id ?? `n${i}`}>
@@ -142,13 +142,14 @@ export function ProductForm({ product, categories, collections, suppliers }: { p
                       : r.id
                       ? <span className="tnum font-bold" title="Ajuste pela tela de Estoque">{r.stock} un.</span>
                       : <input type="number" min={0} value={r.stock} onChange={(e) => patch(i, { stock: Number(e.target.value) })} aria-label="Estoque inicial" className="input h-9 w-20" />}</td>
+                    <td className="text-center"><input type="checkbox" checked={r.available} onChange={(e) => patch(i, { available: e.target.checked })} aria-label={`${r.size} ${r.color} disponível`} className="h-5 w-5 accent-[#1546ff]" /></td>
                     <td><button type="button" onClick={() => setRows(rows.filter((_, k) => k !== i))} aria-label="Remover variação" disabled={rows.length === 1} className="disabled:opacity-30"><Trash2 className="h-4 w-4" /></button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-xs text-ink/55">{onDemand ? "Peças em dropshipping ou sob encomenda vendem sem estoque: o estoque não é conferido nem baixado nas vendas. " : ""}O estoque de variações já salvas é movimentado em <Link href="/admin/estoque" className="underline">Estoque</Link>, para manter o histórico de entradas e saídas.</p>
+          <p className="mt-2 text-xs text-ink/55">{onDemand ? "Peças em dropshipping ou sob encomenda vendem sem estoque: o estoque não é conferido nem baixado nas vendas. Quando um tamanho esgotar no fornecedor, desmarque “Disponível”: ele some da vitrine. " : "Desmarque “Disponível” para tirar um tamanho/cor da vitrine sem apagá-lo. "}O estoque de variações já salvas é movimentado em <Link href="/admin/estoque" className="underline">Estoque</Link>, para manter o histórico de entradas e saídas.</p>
         </section>
 
         <section className="glass bevel grid gap-4 p-5 sm:grid-cols-2">

@@ -4,14 +4,14 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "./form";
 import { Barcode, ChromeBlob, Logo } from "@/components/ui";
 import { ProductArt } from "@/components/art";
-import { getViewer, isConfigured } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/supabase/server";
 import { signOut } from "./actions";
 
 export const metadata: Metadata = { title: "Entrar" };
 
 export default async function Login() {
   // Quem já está conectado não vê o formulário de novo: equipe vai ao painel, cliente vê a própria conta.
-  const { user, profile } = isConfigured ? await getViewer() : { user: null, profile: null };
+  const { user, profile } = await getViewer();
   if (user && (profile?.role === "owner" || profile?.role === "staff")) redirect("/admin");
   return (
     <main className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
@@ -36,13 +36,7 @@ export default async function Login() {
               <p className="mt-4 text-ink/70">Conta: <strong>{user.email}</strong>. Ela ainda não faz parte da equipe, por isso o painel não abre. A proprietária libera o acesso em Configurações → Equipe.</p>
               <div className="mt-6 flex gap-3"><Link href="/" className="btn btn-ink">Ir para a loja</Link><form action={signOut}><button className="btn btn-ghost">Sair e trocar de conta</button></form></div>
             </div>
-          ) : isConfigured ? <LoginForm /> : (
-            <div className="glass bevel p-8">
-              <h2 className="serif text-5xl">Modo demonstração.</h2>
-              <p className="mt-4 text-ink/70">O banco ainda não está conectado, então o painel abre com dados de exemplo e sem login.</p>
-              <Link href="/admin" className="btn btn-blue mt-6 w-full">Abrir o painel</Link>
-            </div>
-          )}
+          ) : <LoginForm />}
         </div>
       </section>
     </main>

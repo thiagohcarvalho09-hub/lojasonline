@@ -1,10 +1,9 @@
-import { DemoBar } from "@/components/ui";
 import { ShopHeader } from "@/components/shop/header";
 import { SideMenu } from "@/components/shop/side-menu";
 import { ShopFooter } from "@/components/shop/footer";
 import { CartProvider } from "@/components/shop/cart";
 import { getCategories, getSettings } from "@/lib/shop";
-import { getViewer, isConfigured } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/supabase/server";
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const [settings, categories, viewer] = await Promise.all([getSettings(), getCategories(), getViewer()]);
@@ -14,7 +13,6 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     <CartProvider freeOver={settings.free_shipping_over} shippingFlat={settings.shipping_flat}>
       <SideMenu categories={categories} staff={staff} email={email} season={settings.season} />
       <div className="lg:pl-16">
-        {!isConfigured && <DemoBar />}
         <ShopHeader settings={settings} categories={categories} staff={staff} signedIn={Boolean(email)} />
         <main className="px-4 md:px-8 2xl:px-12">{children}</main>
         <ShopFooter settings={settings} />

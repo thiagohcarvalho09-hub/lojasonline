@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminShell } from "@/components/admin/shell";
-import { getViewer, isConfigured } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/supabase/server";
 import { getSettings } from "@/lib/shop";
 import { signOut } from "@/app/login/actions";
 
@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     supabase.from("reviews").select("id", { count: "exact", head: true }).eq("approved", false),
   ]);
   return (
-    <AdminShell demo={!isConfigured} user={{ name: profile.full_name || user.email || "Equipe", role: profile.role }} alerts={{ pending: pending.count ?? 0, lowStock: low.count ?? 0, reviews: reviews.count ?? 0 }}>
+    <AdminShell user={{ name: profile.full_name || user.email || "Equipe", role: profile.role }} alerts={{ pending: pending.count ?? 0, lowStock: low.count ?? 0, reviews: reviews.count ?? 0 }}>
       {children}
     </AdminShell>
   );
